@@ -1,0 +1,9 @@
+# Секреты — НИКОГДА не коммитить
+.env
+.env.*
+*.key
+secrets/
+
+# Системное
+.DS_Store
+node_modules/
