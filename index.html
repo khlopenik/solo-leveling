@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
     --bg:#04060e; --panel:rgba(10,18,40,0.72); --panel-solid:#0a1228;
@@ -513,14 +514,9 @@
           <span style="color:var(--muted);font-size:12px">Общий рейтинг · все игроки</span>
           <button class="poke" onclick="openPriv()">🔒 Приватность</button>
         </div>
-        <div class="rankrow top1" onclick="prof('Кирилл','Ранг B · LVL 24')"><div class="pos">1</div><div class="ava">К</div><div class="un">Кирилл<small>Ранг B · LVL 24</small></div><div class="xp">18.4k</div></div>
-        <div class="rankrow top2" onclick="prof('Марина','Ранг C · LVL 19')"><div class="pos">2</div><div class="ava">М</div><div class="un">Марина<small>Ранг C · LVL 19</small></div><div class="xp">14.1k</div></div>
-        <div class="rankrow top3" onclick="prof('Дима','Ранг C · LVL 17')"><div class="pos">3</div><div class="ava">Д</div><div class="un">Дима<small>Ранг C · LVL 17</small></div><div class="xp">12.8k</div></div>
-        <div class="rankrow" onclick="prof('Олег','Ранг C · LVL 16')"><div class="pos">4</div><div class="ava">О</div><div class="un">Олег<small>Ранг C · LVL 16</small></div><div class="xp">11.9k</div></div>
-        <div class="rankrow" onclick="prof('Вика','Ранг D · LVL 12')"><div class="pos">5</div><div class="ava">В</div><div class="un">Вика<small>Ранг D · LVL 12</small></div><div class="xp">9.4k</div></div>
-        <div style="text-align:center;color:var(--muted);font-size:18px;letter-spacing:3px;margin:4px 0">⋯</div>
-        <div class="rankrow me"><div class="pos">128</div><div class="ava">Л</div><div class="un">Ты<small>Ранг E · LVL 7</small></div><div class="xp">8.6k</div></div>
-        <button class="wadd" style="margin-top:12px" onclick="toast('🏆 Открыть весь топ')">🏆 Смотреть весь топ</button>
+        <div id="lb-list">
+          <div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Загрузка рейтинга…</div>
+        </div>
       </div>
       <div id="g-feed" style="display:none">
         <div class="feed" onclick="prof('Кирилл','Ранг B · LVL 24')"><div class="fav">К</div><div class="ft"><b>Кирилл</b> поднялся до <span class="hl">ранга B</span> ⚔<small>15 минут назад</small></div><div class="fire">🔥</div></div>
@@ -639,6 +635,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  try{if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}}catch(e){}
   let exp=620,lvl=7,need=1000,streak=0,streakBest=0,streakDate=null;
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
@@ -646,7 +643,7 @@
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem('sl_'+k,JSON.stringify(v))}};
   const today=()=>new Date().toISOString().slice(0,10);
   let player=DB.get('player',null);
-  function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});}
+  function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});cloudPush();}
   function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);}
   function checkStreak(){
     // если все цели квеста выполнены сегодня и день ещё не зачтён — серия +1
@@ -668,11 +665,51 @@
   function qlogGet(){let q=DB.get('qlog',{date:today(),done:[]});if(q.date!==today())q={date:today(),done:[]};return q;}
   function qlogSet(q){q.date=today();DB.set('qlog',q);}
   let stats=DB.get('stats',{strength:0,agility:0,health:0,intellect:0});
-  function saveStats(){DB.set('stats',stats);}
+  function saveStats(){DB.set('stats',stats);cloudPush();}
   function renderStats(){
     ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
   }
   const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🧠 Интеллект':'intellect','❤️ Здоровье':'health'};
+  // ===== Облако (Supabase edge function) =====
+  const CLOUD='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/sync';
+  const CLOUD_KEY='sb_publishable_6HlVMfE2_FxG4uARa5irXw_OrcquxBw';
+  function getUid(){
+    try{const t=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initDataUnsafe;if(t&&t.user&&t.user.id)return 'tg'+t.user.id;}catch(e){}
+    let g=localStorage.getItem('sl_uid');if(!g){g='dev-'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('sl_uid',g);}return g;
+  }
+  async function cloudCall(body){
+    try{const r=await fetch(CLOUD,{method:'POST',headers:{'apikey':CLOUD_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json();}
+    catch(e){return {error:String(e)};}
+  }
+  function cloudState(){return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats};}
+  let pushT;
+  function cloudPush(){if(!player)return;clearTimeout(pushT);pushT=setTimeout(()=>{cloudCall({action:'push',uid:getUid(),name:player.name,state:cloudState()});},800);}
+  function hydrate(s){
+    if(!s)return;player=s.player||{name:s.name};DB.set('player',player);
+    exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
+    stats=s.stats||{strength:0,agility:0,health:0,intellect:0};
+    DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
+    applyPlayer();document.getElementById('onb').classList.add('hide');
+    renderStats();render();renderStreak();renderDays();renderQuest();zeroBodyForNew();
+  }
+  async function cloudInit(){
+    if(!player){const res=await cloudCall({action:'pull',uid:getUid()});if(res&&res.player&&res.player.state){hydrate(res.player.state);}}
+    else{cloudPush();}
+    loadLeaderboard();
+  }
+  async function loadLeaderboard(){
+    const box=document.getElementById('lb-list');if(!box)return;
+    const res=await cloudCall({action:'leaderboard'});
+    const top=(res&&res.top)||[];
+    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Пока никого нет — стань первым! 💪</div>';return;}
+    const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
+    let h=top.slice(0,10).map((p,i)=>{
+      const me=(p.name===myName)?' me':'';const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
+      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.name||'?')[0]+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
+    }).join('');
+    if(myPos>=10){const p=top[myPos];h+='<div style="text-align:center;color:var(--muted);font-size:18px;margin:4px 0">⋯</div><div class="rankrow me"><div class="pos">'+(myPos+1)+'</div><div class="ava">'+(myName||'?')[0]+'</div><div class="un">Ты <small style="color:var(--gold)">(ты)</small></div><div class="xp">'+(p.exp||0)+'</div></div>';}
+    box.innerHTML=h;
+  }
   function render(){
     document.getElementById('exp').style.width=Math.min(100,exp/need*100)+'%';
     document.getElementById('expnum').textContent=exp;
@@ -883,6 +920,7 @@
     const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');zeroBodyForNew();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();updBalance();
+    cloudInit();
   }
   function zeroBodyForNew(){
     if(DB.get('hasMetrics',false))return;
