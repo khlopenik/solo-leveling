@@ -331,10 +331,10 @@
         <div class="exptext"><span id="expnum">620</span> / <span id="expneed">1000</span> EXP</div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="k">💪 СИЛА</div><div class="v">14</div></div>
-        <div class="stat"><div class="k">⚡ ЛОВКОСТЬ</div><div class="v">11</div></div>
-        <div class="stat"><div class="k">❤️ ЗДОРОВЬЕ</div><div class="v">16</div></div>
-        <div class="stat"><div class="k">🧠 ИНТЕЛЛЕКТ</div><div class="v">9</div></div>
+        <div class="stat"><div class="k">💪 СИЛА</div><div class="v" id="st-strength">0</div></div>
+        <div class="stat"><div class="k">⚡ ЛОВКОСТЬ</div><div class="v" id="st-agility">0</div></div>
+        <div class="stat"><div class="k">❤️ ЗДОРОВЬЕ</div><div class="v" id="st-health">0</div></div>
+        <div class="stat"><div class="k">🧠 ИНТЕЛЛЕКТ</div><div class="v" id="st-intellect">0</div></div>
       </div>
     </div>
     <div class="window qinfo">
@@ -639,16 +639,40 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  let exp=620,lvl=7,need=1000;
+  let exp=620,lvl=7,need=1000,streak=0,streakBest=0,streakDate=null;
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem('sl_'+k,JSON.stringify(v))}};
   const today=()=>new Date().toISOString().slice(0,10);
   let player=DB.get('player',null);
-  function saveProgress(){DB.set('progress',{exp,lvl,need});}
+  function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});}
+  function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);}
+  function checkStreak(){
+    // если все цели квеста выполнены сегодня и день ещё не зачтён — серия +1
+    const rows=document.querySelectorAll('#qgoals .qrow');
+    if(!rows.length)return;
+    const allDone=[...rows].every(r=>r.classList.contains('done'));
+    if(allDone&&streakDate!==today()){
+      streak=(streakDate===yesterday())?streak+1:1;
+      streakDate=today();if(streak>streakBest)streakBest=streak;
+      saveProgress();renderDays();renderStreak();toast('🔥 День засчитан! Серия: '+streak);
+    }
+  }
+  function renderStreak(){
+    const s=document.querySelector('#s-prog .streak');
+    if(s)s.textContent='🔥 '+streak+(streak===1?' ДЕНЬ':' ДНЕЙ')+' ПОДРЯД';
+    const rec=document.querySelector('#s-prog .sec-title span');
+    if(rec)rec.textContent='рекорд: '+streakBest;
+  }
   function qlogGet(){let q=DB.get('qlog',{date:today(),done:[]});if(q.date!==today())q={date:today(),done:[]};return q;}
   function qlogSet(q){q.date=today();DB.set('qlog',q);}
+  let stats=DB.get('stats',{strength:0,agility:0,health:0,intellect:0});
+  function saveStats(){DB.set('stats',stats);}
+  function renderStats(){
+    ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
+  }
+  const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🧠 Интеллект':'intellect','❤️ Здоровье':'health'};
   function render(){
     document.getElementById('exp').style.width=Math.min(100,exp/need*100)+'%';
     document.getElementById('expnum').textContent=exp;
@@ -668,10 +692,10 @@
       if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);toast('⬆ LEVEL UP! Уровень '+lvl);}
       else toast('+'+xp+' XP');
     }
-    const nm=el.querySelector('.qrn').textContent, q=qlogGet();
-    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);}
-    else q.done=q.done.filter(x=>x!==nm);
-    qlogSet(q);saveProgress();render();
+    const nm=el.querySelector('.qrn').textContent, sp=el.dataset.sphere||'health', q=qlogGet();
+    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;}
+    else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);}
+    saveStats();renderStats();qlogSet(q);saveProgress();render();checkStreak();
   }
   function go(name){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -830,9 +854,12 @@
     DB.set('player',player);
     // новый игрок начинает с нуля
     exp=0;lvl=1;need=1000;saveProgress();
+    stats={strength:0,agility:0,health:0,intellect:0};saveStats();renderStats();
+    DB.set('progress',{exp,lvl,need,streak:0,streakBest:0,streakDate:null});streak=0;
     applyPlayer();
     document.getElementById('onb').classList.add('hide');
-    toast('⚔ Добро пожаловать, '+name+'!');
+    toast('⚔ Добро пожаловать, '+name+'! Собери свой ежедневный квест');
+    setTimeout(openQB,600); // сразу выбрать упражнения
   }
   function applyPlayer(){
     if(!player)return;
@@ -844,7 +871,9 @@
   }
   function init(){
     // прогресс
-    const pr=DB.get('progress',null);if(pr){exp=pr.exp;lvl=pr.lvl;need=pr.need;}
+    const pr=DB.get('progress',null);
+    if(pr){exp=pr.exp;lvl=pr.lvl;need=pr.need;streak=pr.streak||0;streakBest=pr.streakBest||0;streakDate=pr.streakDate||null;}
+    if(streakDate&&streakDate!==today()&&streakDate!==yesterday()){streak=0;streakDate=null;saveProgress();}
     // квест-конфиг
     const qs=DB.get('qsel',null);if(qs){qSel=new Set(qs);}
     qCustom=DB.get('qcustom',[]);
@@ -852,8 +881,18 @@
     const wd=DB.get('water',null);wNow=(wd&&wd.date===today())?wd.ml:0;
     // питание (сброс по дню)
     const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
-    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');}
-    render();renderWater();drawChart();renderDays();renderQuest();loadDiary();updBalance();
+    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');zeroBodyForNew();}
+    render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();updBalance();
+  }
+  function zeroBodyForNew(){
+    if(DB.get('hasMetrics',false))return;
+    const comp=document.querySelector('#s-prog .comp');if(!comp||!player)return;
+    comp.querySelectorAll('.crow').forEach(r=>{
+      const name=r.querySelector('.cn').textContent, v=r.querySelector('.cv'), b=r.querySelector('.cb');
+      if(name.includes('Вес')){v.textContent=(player.weight||'—')+' кг';if(b){b.textContent='—';b.className='cb';}}
+      else if(name.includes('Рост')){v.textContent=(player.height||'—')+' см';if(b){b.textContent='—';b.className='cb';}}
+      else{v.textContent='—';if(b){b.textContent='нет данных';b.className='cb';}}
+    });
   }
   function loadDiary(){
     const md=DB.get('meals',null);
@@ -942,13 +981,13 @@
   }
   function renderQuest(){
     let items=[];
-    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t]);});
-    qCustom.forEach(c=>items.push([c.n,c.xp,c.t]));
-    if(!items.length)items=[['Приседания',50,'5']];
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t,sphereOf[cat]]);});
+    qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
+    if(!items.length)items=[['Приседания',50,'5','strength']];
     const g=document.getElementById('qgoals');
-    g.innerHTML=items.map(([n,xp,t])=>{
+    g.innerHTML=items.map(([n,xp,t,sp])=>{
       const cnt=t&&/^\d/.test(t)?('[0/'+t+']'):(t?'[ '+t+' ]':'[0/1]');
-      return '<div class="qrow" onclick="toggle(this,'+xp+')"><span class="qrn">'+n+'</span><span class="qrc">'+cnt+'</span><span class="qrk">✓</span></div>';
+      return '<div class="qrow" data-sphere="'+(sp||'health')+'" onclick="toggle(this,'+xp+')"><span class="qrn">'+n+'</span><span class="qrc">'+cnt+'</span><span class="qrk">✓</span></div>';
     }).join('');
     const done=qlogGet().done;
     g.querySelectorAll('.qrow').forEach(row=>{
@@ -958,7 +997,7 @@
   }
   function renderDays(){
     const el=document.getElementById('daycells');if(!el)return;
-    const total=14, done=12;let h='';
+    const done=streak, total=Math.max(14,Math.ceil((done+1)/7)*7);let h='';
     for(let i=1;i<=total;i++){
       const cls=i<=done?'done':(i===done+1?'today':'');
       h+='<div class="dcell '+cls+'">'+(i<=done?'🔥':i)+'</div>';
