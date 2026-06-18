@@ -66,8 +66,14 @@
       сохраняются игрок, прогресс (exp/lvl), конфиг квеста, отметки квеста (сброс по дню),
       еда (дневник по дню), вода (по дню). Онбординг показывается только новому игроку.
       → Приложение РЕАЛЬНО РАБОТАЕТ и помнит данные между перезагрузками.
-- [ ] Заменить слой DB (localStorage → Supabase) когда разблокируют создание проекта
-- [ ] Подключить фронтенд к Supabase: онбординг → players, квест → player_quest/quest_logs
+- [x] ✅ ПОДКЛЮЧЕНО К ОБЛАКУ: edge function `sync` (verify_jwt=false, CORS, service role, схема solo_leveling)
+      действия pull/push/leaderboard. Схема открыта в API (pgrst.db_schemas), гранты выданы. Протестировано curl.
+- [x] Фронт синхронизируется с облаком: прогресс/статы/игрок → push (debounce); новое устройство → pull;
+      РЕЙТИНГ живой (loadLeaderboard читает топ-50 реальных игроков, подсветка «ты»).
+- [x] Telegram WebApp SDK подключён: uid = tg-id внутри Telegram (общий прогресс между устройствами),
+      ready()/expand(). Вне Telegram — guest uid в localStorage.
+- [ ] Безопасность: добавить валидацию Telegram initData в edge function (сейчас открыта для теста)
+- [ ] Нормализовать данные (сейчас весь state в players.state jsonb + ключевые колонки)
 
 ## 🔜 НА ВНЕДРЕНИЕ (бэкенд / логика, позже)
 - [x] Telegram-бот создан: @solo_leveling_fit_bot (токен в .env, защищён .gitignore)

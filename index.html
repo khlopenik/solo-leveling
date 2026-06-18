@@ -283,6 +283,10 @@
   .screen{display:none} .screen.active{display:block}
   .onb{position:fixed;inset:0;z-index:80;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;background:radial-gradient(900px 500px at 50% -5%,rgba(43,107,255,.22),transparent 60%),var(--bg)}
   .onb.hide{display:none}
+  .boot{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:radial-gradient(900px 500px at 50% 0,rgba(43,107,255,.2),transparent 60%),var(--bg)}
+  .boot.hide{display:none}
+  .boot-in{font-family:"Exo 2";font-weight:700;letter-spacing:5px;color:var(--cyan);font-size:18px;text-align:center;text-shadow:0 0 16px rgba(70,215,255,.7)}
+  .boot-sub{margin-top:10px;font-size:12px;letter-spacing:2px;color:var(--muted)}
   .onb-inner{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line-strong);border-radius:16px;padding:22px 18px;box-shadow:0 0 30px rgba(43,107,255,.3)}
   .onb label{display:block;font-family:"Exo 2";font-size:11px;letter-spacing:1px;color:var(--cyan);margin:12px 0 5px}
   .onb input,.onb select{width:100%;padding:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:"Rajdhani";font-size:15px}
@@ -294,7 +298,8 @@
 </style>
 </head>
 <body>
-<div class="onb" id="onb">
+<div class="boot" id="boot"><div class="boot-in">⟢ СИСТЕМА ⟢<div class="boot-sub">загрузка…</div></div></div>
+<div class="onb hide" id="onb">
   <div class="onb-inner">
     <div class="sys-tag" style="font-size:13px">⟢ пробуждение ⟢</div>
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
@@ -678,7 +683,9 @@
     let g=localStorage.getItem('sl_uid');if(!g){g='dev-'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('sl_uid',g);}return g;
   }
   async function cloudCall(body){
-    try{const r=await fetch(CLOUD,{method:'POST',headers:{'apikey':CLOUD_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json();}
+    try{const ctrl=new AbortController();const tm=setTimeout(()=>ctrl.abort(),6000);
+      const r=await fetch(CLOUD,{method:'POST',headers:{'apikey':CLOUD_KEY,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
+      clearTimeout(tm);return await r.json();}
     catch(e){return {error:String(e)};}
   }
   function cloudState(){return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats};}
@@ -693,8 +700,11 @@
     renderStats();render();renderStreak();renderDays();renderQuest();zeroBodyForNew();
   }
   async function cloudInit(){
-    if(!player){const res=await cloudCall({action:'pull',uid:getUid()});if(res&&res.player&&res.player.state){hydrate(res.player.state);}}
-    else{cloudPush();}
+    if(!player){
+      const res=await cloudCall({action:'pull',uid:getUid()});
+      if(res&&res.player&&res.player.state){hydrate(res.player.state);bootHide();}
+      else{showOnboarding();}
+    } else {cloudPush();bootHide();}
     loadLeaderboard();
   }
   async function loadLeaderboard(){
@@ -918,10 +928,12 @@
     const wd=DB.get('water',null);wNow=(wd&&wd.date===today())?wd.ml:0;
     // питание (сброс по дню)
     const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
-    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');zeroBodyForNew();}
+    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');zeroBodyForNew();bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();updBalance();
     cloudInit();
   }
+  function bootHide(){const b=document.getElementById('boot');if(b)b.classList.add('hide');}
+  function showOnboarding(){document.getElementById('onb').classList.remove('hide');bootHide();}
   function zeroBodyForNew(){
     if(DB.get('hasMetrics',false))return;
     const comp=document.querySelector('#s-prog .comp');if(!comp||!player)return;
