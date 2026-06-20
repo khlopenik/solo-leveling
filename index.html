@@ -400,7 +400,7 @@
       <div class="sec-title">Показатели тела</div>
       <div class="tiles">
         <div class="tile" onclick="go('nutri')"><div class="th">🔥 КАЛОРИИ</div><div class="big">1240<span style="font-size:13px;color:var(--muted)"> /1800</span></div><div class="sub">осталось 560 ккал</div><div class="barmini"><i style="width:69%"></i></div></div>
-        <div class="tile" onclick="go('prog')"><div class="th">⚖ ВЕС</div><div class="big">62.4<span style="font-size:13px;color:var(--muted)"> кг</span></div><div class="sub" style="color:var(--ok)">▼ 0.3 за неделю</div><div class="barmini"><i style="width:55%"></i></div></div>
+        <div class="tile" onclick="go('prog')"><div class="th">⚖ ВЕС</div><div class="big"><span id="sys-wt-val">—</span><span style="font-size:13px;color:var(--muted)"> кг</span></div><div class="sub" id="sys-wt-sub" style="color:var(--muted)">не записан</div><div class="barmini"><i id="sys-wt-fill" style="width:0%"></i></div></div>
       </div>
       <div class="steps-tile">
         <div class="steps-row">
@@ -421,13 +421,13 @@
     <div class="window">
       <div class="sys-tag">⟢ nutrition ⟢</div>
       <div class="ring">
-        <svg width="150" height="150"><circle cx="75" cy="75" r="66" stroke="rgba(70,215,255,.15)" stroke-width="10" fill="none"/><circle cx="75" cy="75" r="66" stroke="url(#g)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="414" stroke-dashoffset="128"/><defs><linearGradient id="g"><stop offset="0" stop-color="#2b6bff"/><stop offset="1" stop-color="#46d7ff"/></linearGradient></defs></svg>
-        <div class="rc"><div class="n">1240</div><div class="l">/ 1800 ккал</div></div>
+        <svg width="150" height="150"><circle cx="75" cy="75" r="66" stroke="rgba(70,215,255,.15)" stroke-width="10" fill="none"/><circle id="ringCircle" cx="75" cy="75" r="66" stroke="url(#g)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="414" stroke-dashoffset="414"/><defs><linearGradient id="g"><stop offset="0" stop-color="#2b6bff"/><stop offset="1" stop-color="#46d7ff"/></linearGradient></defs></svg>
+        <div class="rc"><div class="n" id="ringKcal">0</div><div class="l">/ <span id="ringNorm">1800</span> ккал</div></div>
       </div>
       <div class="macros">
-        <div class="macro"><div class="mv" style="color:var(--gold)">78<small style="color:var(--muted);font-size:11px">/90</small></div><div class="ml">БЕЛКИ</div><div class="mbar"><i style="width:87%;background:var(--gold)"></i></div></div>
-        <div class="macro"><div class="mv" style="color:var(--ok)">58<small style="color:var(--muted);font-size:11px">/60</small></div><div class="ml">ЖИРЫ</div><div class="mbar"><i style="width:97%;background:var(--ok)"></i></div></div>
-        <div class="macro"><div class="mv" style="color:var(--danger)">140<small style="color:var(--muted);font-size:11px">/120</small></div><div class="ml">УГЛЕВ.</div><div class="mbar"><i style="width:100%;background:var(--danger)"></i></div></div>
+        <div class="macro"><div class="mv" id="mac-pv" style="color:var(--gold)">0<small style="color:var(--muted);font-size:11px">/90</small></div><div class="ml">БЕЛКИ</div><div class="mbar"><i id="mac-pb" style="width:0%;background:var(--gold)"></i></div></div>
+        <div class="macro"><div class="mv" id="mac-fv" style="color:var(--ok)">0<small style="color:var(--muted);font-size:11px">/60</small></div><div class="ml">ЖИРЫ</div><div class="mbar"><i id="mac-fb" style="width:0%;background:var(--ok)"></i></div></div>
+        <div class="macro"><div class="mv" id="mac-cv" style="color:var(--cyan-soft)">0<small style="color:var(--muted);font-size:11px">/120</small></div><div class="ml">УГЛЕВ.</div><div class="mbar"><i id="mac-cb" style="width:0%;background:var(--cyan-soft)"></i></div></div>
       </div>
       <div class="legend"><span><i style="background:var(--ok)"></i>в норме</span><span><i style="background:var(--gold)"></i>недобор</span><span><i style="background:var(--danger)"></i>превышение</span></div>
       <div class="balance" id="balance"><b>Дефицит 560 ккал</b> · цель: дефицит ✓</div>
@@ -492,25 +492,10 @@
       </div>
       <div class="improw">
         <button class="imp" onclick="toast('📷 Загрузить скрин из приложения весов')">📷 Скрин с весов</button>
-        <button class="imp" onclick="toast('✍ Ввести вручную')">✍ Вручную</button>
+        <button class="imp" onclick="openMetricsForm()">✍ Вручную</button>
         <button class="imp" onclick="toast('🧍 По фото тела (AI)')">🧍 По фото</button>
       </div>
-      <div class="comp">
-        <div class="crow"><span class="cn">⚖ Вес</span><span class="cv">62.4 кг</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">📊 ИМТ</span><span class="cv">22.1</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🔥 Жир</span><span class="cv">24.0 %</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🩸 Жировая масса</span><span class="cv">15.0 кг</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🤸 Соотн. скел. мышечной массы</span><span class="cv">42.5 %</span><span class="cb ok">здоровая</span></div>
-        <div class="crow"><span class="cn">🦵 Скелетная мышечная масса</span><span class="cv">23.8 кг</span><span class="cb ok">здоровая</span></div>
-        <div class="crow"><span class="cn">💪 Мышечная масса</span><span class="cv">26.8 кг</span><span class="cb ok">совершенная</span></div>
-        <div class="crow"><span class="cn">💧 Вода</span><span class="cv">54.0 %</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🥚 Белок</span><span class="cv">18.2 %</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🦴 Минералы</span><span class="cv">3.1 кг</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🫁 Висцеральный жир</span><span class="cv">5</span><span class="cb ok">норма</span></div>
-        <div class="crow"><span class="cn">🔥 Метаболизм</span><span class="cv">1410 ккал</span><span class="cb amb">высокий</span></div>
-        <div class="crow"><span class="cn">📏 Рост</span><span class="cv">168 см</span><span class="cb">—</span></div>
-        <div class="crow"><span class="cn">🌱 Метаболический возраст</span><span class="cv">24</span><span class="cb ok">отлично</span></div>
-      </div>
+      <div class="comp" id="compGrid"></div>
       <div class="rnote" style="margin-top:10px">Оценки приблизительные (скрин с весов / фото / ручной ввод). Не медицинская точность.</div>
     </div>
     <div class="window">
@@ -528,7 +513,8 @@
         <div class="ws"><div class="wsv" id="ws-max">64.1</div><div class="wsl">максимум</div></div>
         <div class="ws"><div class="wsv" id="ws-min">62.4</div><div class="wsl">минимум</div></div>
       </div>
-      <div class="periods" style="margin-top:12px">
+      <button class="wadd" style="margin-top:12px" onclick="document.getElementById('weightmodal').classList.add('show')">⚖ Записать вес сегодня</button>
+      <div class="periods" style="margin-top:10px">
         <button class="on" onclick="setMetric(this,'weight')">Вес</button>
         <button onclick="setMetric(this,'bmi')">ИМТ</button>
         <button onclick="setMetric(this,'fat')">Жир %</button>
@@ -688,6 +674,38 @@
     <div class="pclose" onclick="closeProf()">закрыть</div>
   </div>
 </div>
+<!-- ======= ЗАПИСАТЬ ВЕС ======= -->
+<div class="modal" id="weightmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:left">
+    <div class="pn" style="text-align:center">⚖ Записать вес</div>
+    <div class="pr" style="text-align:center;margin-bottom:14px">Лучше утром, натощак</div>
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin-bottom:4px">Вес, кг</label>
+    <input id="wlog-kg" type="number" step="0.1" placeholder="62.4" style="width:100%;padding:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:16px;margin-bottom:12px">
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin-bottom:4px">Жир % <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— по желанию</span></label>
+    <input id="wlog-fat" type="number" step="0.1" placeholder="24.0" style="width:100%;padding:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:16px;margin-bottom:14px">
+    <button class="enter" onclick="saveWeightEntry()">✓ Сохранить</button>
+    <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('weightmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
+<!-- ======= СОСТАВ ТЕЛА ВРУЧНУЮ ======= -->
+<div class="modal" id="metricsmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="pn" style="text-align:center">✍ Состав тела</div>
+    <div class="pr" style="text-align:center;margin-bottom:12px">Вводи с умных весов или на глаз</div>
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">Вес, кг</label>
+    <input id="bm-weight" type="number" step="0.1" placeholder="62.4" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:10px">
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">Жир, %</label>
+    <input id="bm-fat" type="number" step="0.1" placeholder="24.0" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:10px">
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">Мышечная масса, кг</label>
+    <input id="bm-muscle" type="number" step="0.1" placeholder="26.0" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:10px">
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">Вода, %</label>
+    <input id="bm-water" type="number" step="0.1" placeholder="54.0" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:10px">
+    <label style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">Висцеральный жир (1–15)</label>
+    <input id="bm-visceral" type="number" step="1" placeholder="5" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:14px">
+    <button class="enter" onclick="saveBodyMetrics()">✓ Сохранить</button>
+    <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('metricsmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
 <!-- ======= ПОЛУЧЕНО ЗАДАНИЕ ======= -->
 <div class="qr-overlay" id="qroverlay">
   <div class="qr-box">
@@ -812,7 +830,7 @@
     stats=s.stats||{strength:0,agility:0,health:0,intellect:0};
     DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
     applyPlayer();document.getElementById('onb').classList.add('hide');
-    renderStats();render();renderStreak();renderDays();renderQuest();zeroBodyForNew();
+    renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
   async function cloudInit(){
     if(!player){
@@ -958,7 +976,9 @@
   }
   let secs=6*3600+14*60+22;
   setInterval(()=>{secs=Math.max(0,secs-1);const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');const el=document.getElementById('timer');if(el)el.textContent='⏱ осталось '+h+':'+m+':'+s;},1000);
-  let eaten=1240, normCal=1800, goalType='deficit';
+  let eaten=0, normCal=1800, goalType='deficit';
+  let macros={p:0,f:0,c:0}, normMacros={p:90,f:60,c:120};
+  let weightLog=[], bodyMetrics=null;
   const foodDB=[
     {k:['сырок','глазир'],n:'Сырок глазированный',kc:280,p:8,f:18,c:22},
     {k:['кофе','молок'],n:'Кофе с молоком',kc:60,p:3,f:3,c:5},
@@ -986,15 +1006,16 @@
   function addMeal(){
     if(!lastRes)return;
     eaten+=lastRes.kc;
+    macros.p+=(lastRes.p||0);macros.f+=(lastRes.f||0);macros.c+=(lastRes.c||0);
     const now=new Date(),tm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     const diary=document.querySelectorAll('#s-nutri .window')[1];
     const m=document.createElement('div');m.className='meal done';
     m.innerHTML='<div class="mi">🍽</div><div class="mn">'+lastRes.n+'<small>только что · '+tm+'</small></div><div class="mk">'+lastRes.kc+'</div>';
     diary.appendChild(m);
-    document.querySelector('#s-nutri .ring .n').textContent=eaten;
-    updBalance();
+    renderNutrition();
     const md=DB.get('meals',{date:today(),list:[]});if(md.date!==today()){md.date=today();md.list=[];}
-    md.list.push({n:lastRes.n,kc:lastRes.kc,tm});DB.set('meals',md);DB.set('eaten',{date:today(),kc:eaten});
+    md.list.push({n:lastRes.n,kc:lastRes.kc,p:lastRes.p||0,f:lastRes.f||0,c:lastRes.c||0,tm});
+    DB.set('meals',md);DB.set('eaten',{date:today(),kc:eaten});DB.set('macros',{date:today(),p:macros.p,f:macros.f,c:macros.c});
     document.getElementById('fd-res').innerHTML='';document.getElementById('fd-desc').value='';
     toast('✓ Добавлено: +'+lastRes.kc+' ккал');lastRes=null;
   }
@@ -1030,7 +1051,9 @@
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
     document.getElementById('silh').textContent=player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';
-    renderWater();render();
+    normCal=calcNormCal(player);
+    normMacros=calcNormMacros(normCal,player);
+    renderWater();render();renderNutrition();
   }
   function init(){
     // прогресс
@@ -1044,8 +1067,11 @@
     const wd=DB.get('water',null);wNow=(wd&&wd.date===today())?wd.ml:0;
     // питание (сброс по дню)
     const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
-    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');zeroBodyForNew();bootHide();}
-    render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();updBalance();
+    const mcd=DB.get('macros',null);if(mcd&&mcd.date===today())macros={p:mcd.p||0,f:mcd.f||0,c:mcd.c||0};
+    loadWeightLog();
+    bodyMetrics=DB.get('bodyMetrics',null);
+    if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
+    render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();
     cloudInit();
   }
   function bootHide(){const b=document.getElementById('boot');if(b)b.classList.add('hide');}
@@ -1063,15 +1089,15 @@
   function loadDiary(){
     const md=DB.get('meals',null);
     const diary=document.querySelectorAll('#s-nutri .window')[1];if(!diary)return;
-    const ringN=document.querySelector('#s-nutri .ring .n');
     const hasMeals=md&&md.date===today()&&md.list.length;
-    if(player||hasMeals){ // у реального игрока убираем демо-блюда
-      diary.querySelectorAll('.meal').forEach(m=>m.remove());
-      if(hasMeals)md.list.forEach(it=>{const m=document.createElement('div');m.className='meal done';
-        m.innerHTML='<div class="mi">🍽</div><div class="mn">'+it.n+'<small>'+it.tm+'</small></div><div class="mk">'+it.kc+'</div>';
-        diary.appendChild(m);});
-    }
-    if(player&&ringN)ringN.textContent=eaten;
+    diary.querySelectorAll('.meal').forEach(m=>m.remove());
+    macros={p:0,f:0,c:0};
+    if(hasMeals){md.list.forEach(it=>{
+      const m=document.createElement('div');m.className='meal done';
+      m.innerHTML='<div class="mi">🍽</div><div class="mn">'+it.n+'<small>'+it.tm+'</small></div><div class="mk">'+it.kc+'</div>';
+      diary.appendChild(m);
+      macros.p+=(it.p||0);macros.f+=(it.f||0);macros.c+=(it.c||0);
+    });}
   }
   const wData={
     weight:{
@@ -1084,27 +1110,162 @@
     fat:{month:{l:['1','8','15','22','29'],v:[27.0,26.0,25.0,24.5,24.0]}}
   };
   let curMetric='weight', curPeriod='month';
+
+  // ===== НОРМЫ ИЗ ДАННЫХ ИГРОКА =====
+  function calcBMR(){
+    if(!player)return null;
+    const w=player.weight,h=player.height,sex=player.sex,dob=player.dob;
+    if(!w||!h)return null;
+    let age=25;
+    if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
+    return Math.round(sex==='Мужской'?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161);
+  }
+  function calcNormCal(p){
+    const bmr=calcBMR();if(!bmr)return 1800;
+    const mult={'Новичок (мало двигаюсь)':1.2,'Средний (тренируюсь иногда)':1.375,'Высокий (активный спорт)':1.55}[p.activity]||1.2;
+    let cal=Math.round(bmr*mult);
+    if(p.goal==='Похудеть')cal=Math.round(cal*0.85);
+    else if(p.goal==='Набрать массу')cal=Math.round(cal*1.1);
+    return cal;
+  }
+  function calcNormMacros(cal,p){
+    const w=(p&&p.weight)||65;
+    const protG=Math.round(w*(p&&p.goal==='Набрать массу'?2.0:1.6));
+    const fatG=Math.round(w*0.9);
+    const carbG=Math.max(50,Math.round((cal-protG*4-fatG*9)/4));
+    return{p:protG,f:fatG,c:carbG};
+  }
+
+  // ===== ПИТАНИЕ =====
+  function renderNutrition(){
+    const ratio=normCal>0?Math.min(1,eaten/normCal):0;
+    const circle=document.getElementById('ringCircle');
+    if(circle)circle.setAttribute('stroke-dashoffset',(414*(1-ratio)).toFixed(1));
+    const rkEl=document.getElementById('ringKcal');if(rkEl)rkEl.textContent=eaten;
+    const rnEl=document.getElementById('ringNorm');if(rnEl)rnEl.textContent=normCal;
+    function updMac(valId,barId,val,norm,defCol){
+      const el=document.getElementById(valId);if(!el)return;
+      const v=Math.round(val),pct=norm>0?Math.min(110,v/norm*100):0;
+      const col=pct>105?'var(--danger)':pct<70?'var(--gold)':defCol;
+      el.innerHTML=v+'<small style="color:var(--muted);font-size:11px">/'+norm+'</small>';
+      el.style.color=col;
+      const bar=document.getElementById(barId);if(bar){bar.style.width=Math.min(100,pct)+'%';bar.style.background=col;}
+    }
+    updMac('mac-pv','mac-pb',macros.p,normMacros.p,'var(--gold)');
+    updMac('mac-fv','mac-fb',macros.f,normMacros.f,'var(--ok)');
+    updMac('mac-cv','mac-cb',macros.c,normMacros.c,'var(--cyan-soft)');
+    updBalance();
+  }
+
+  // ===== СОСТАВ ТЕЛА =====
+  function renderBodyMetrics(bm){
+    bm=bm||bodyMetrics;
+    const comp=document.getElementById('compGrid');if(!comp)return;
+    const w=(bm&&bm.weight)||(player&&player.weight);
+    const h=player&&player.height;
+    const bmiVal=bm&&bm.bmi?bm.bmi:(w&&h?(w/(h/100)**2).toFixed(1):null);
+    const bmr=calcBMR();
+    function tag(cls,txt){return'<span class="cb'+(cls?' '+cls:'')+'">'+txt+'</span>';}
+    function bmiTag(v){if(!v)return tag('','нет данных');v=+v;return v<18.5?tag('low','недовес'):v<25?tag('ok','норма'):v<30?tag('amb','избыток'):tag('over','ожирение');}
+    function fatTag(v){if(!v)return tag('','нет данных');v=+v;const m=player&&player.sex==='Мужской';return m?(v<6?tag('low','очень мало'):v<18?tag('ok','норма'):v<25?tag('amb','выше'):tag('over','избыток')):(v<14?tag('low','очень мало'):v<25?tag('ok','норма'):v<32?tag('amb','выше'):tag('over','избыток'));}
+    const rows=[
+      ['⚖','Вес',w?w+' кг':'—',w?tag('ok','норма'):tag('','нет данных')],
+      ['📊','ИМТ',bmiVal||'—',bmiTag(bmiVal)],
+      ['🔥','Жир',bm&&bm.fat?bm.fat+' %':'—',fatTag(bm&&bm.fat)],
+      ['🩸','Жировая масса',(bm&&bm.fat&&w)?(w*bm.fat/100).toFixed(1)+' кг':'—',tag('','—')],
+      ['🦵','Мышечная масса',bm&&bm.muscle?bm.muscle+' кг':'—',bm&&bm.muscle?tag('ok','норма'):tag('','нет данных')],
+      ['💧','Вода',bm&&bm.water?bm.water+' %':'—',bm&&bm.water?tag('ok','норма'):tag('','нет данных')],
+      ['🫁','Висцеральный жир',bm&&bm.visceral?bm.visceral:'—',bm&&bm.visceral?(+bm.visceral<=9?tag('ok','норма'):tag('over','выше нормы')):tag('','нет данных')],
+      ['🔥','Базовый обмен',bmr?bmr+' ккал':'—',tag('','—')],
+      ['📏','Рост',h?h+' см':'—',tag('','—')],
+    ];
+    comp.innerHTML=rows.map(([em,n,v,st])=>'<div class="crow"><span class="cn">'+em+' '+n+'</span><span class="cv">'+v+'</span>'+st+'</div>').join('');
+    if(bm&&bm.weight)player&&(player.weight=bm.weight);
+  }
+  function openMetricsForm(){
+    const bm=DB.get('bodyMetrics',{})||{};
+    document.getElementById('bm-weight').value=bm.weight||(player&&player.weight)||'';
+    document.getElementById('bm-fat').value=bm.fat||'';
+    document.getElementById('bm-muscle').value=bm.muscle||'';
+    document.getElementById('bm-water').value=bm.water||'';
+    document.getElementById('bm-visceral').value=bm.visceral||'';
+    document.getElementById('metricsmodal').classList.add('show');
+  }
+  function saveBodyMetrics(){
+    const g=id=>parseFloat(document.getElementById(id).value)||undefined;
+    const bm={date:today(),weight:g('bm-weight'),fat:g('bm-fat'),muscle:g('bm-muscle'),water:g('bm-water'),visceral:g('bm-visceral')};
+    Object.keys(bm).forEach(k=>{if(bm[k]===undefined)delete bm[k];});
+    bodyMetrics=bm;DB.set('bodyMetrics',bm);
+    if(bm.weight){const entry={date:today(),kg:bm.weight};if(bm.fat)entry.fat=bm.fat;const idx=weightLog.findIndex(w=>w.date===today());if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);DB.set('weightLog',weightLog);updateWeightTile();drawChart();}
+    renderBodyMetrics(bm);
+    document.getElementById('metricsmodal').classList.remove('show');toast('✓ Состав тела сохранён');
+  }
+
+  // ===== ВЕС И ГРАФИК =====
+  function loadWeightLog(){
+    weightLog=DB.get('weightLog',[]);
+    updateWeightTile();
+  }
+  function updateWeightTile(){
+    const el=document.getElementById('sys-wt-val');if(!el)return;
+    if(!weightLog.length){el.textContent='—';return;}
+    const last=weightLog[weightLog.length-1];
+    el.textContent=last.kg.toFixed(1);
+    const sub=document.getElementById('sys-wt-sub');
+    if(sub){const prev=weightLog.length>=2?weightLog[weightLog.length-2]:null;
+      if(prev){const diff=(last.kg-prev.kg).toFixed(1);sub.textContent=(+diff<=0?'▼ ':'▲ ')+Math.abs(diff)+' кг';sub.style.color=+diff<=0?'var(--ok)':'var(--danger)';}
+      else{sub.textContent='обновлено';sub.style.color='var(--muted)';}}
+  }
+  function saveWeightEntry(){
+    const kg=parseFloat(document.getElementById('wlog-kg').value);
+    if(isNaN(kg)||kg<20||kg>300){toast('⚠ Введи реальный вес');return;}
+    const fat=parseFloat(document.getElementById('wlog-fat').value)||undefined;
+    const entry={date:today(),kg};if(fat)entry.fat=fat;
+    const idx=weightLog.findIndex(w=>w.date===today());
+    if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);
+    weightLog.sort((a,b)=>a.date.localeCompare(b.date));
+    DB.set('weightLog',weightLog);
+    updateWeightTile();drawChart();
+    document.getElementById('weightmodal').classList.remove('show');
+    toast('✓ Вес записан: '+kg+' кг');
+  }
   function drawChart(){
-    const d=(wData[curMetric]&&wData[curMetric][curPeriod])||wData[curMetric].month||wData.weight.month;
-    const v=d.v, l=d.l, W=300, H=140, pad=24;
-    const mn=Math.min(...v)-0.6, mx=Math.max(...v)+0.6, rng=mx-mn||1;
-    const x=i=>pad+i*(W-2*pad)/(v.length-1);
-    const y=val=>H-pad-(val-mn)/rng*(H-2*pad);
-    let pts=v.map((val,i)=>x(i)+','+y(val)).join(' ');
+    if(weightLog.length>=2){drawRealChart();return;}
+    const box=document.getElementById('wchart');
+    if(box)box.innerHTML='<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px;line-height:1.7">Нет данных.<br>Нажми «Записать вес» — появится график.</div>';
+    ['ws-avg','ws-chg','ws-max','ws-min'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='—';});
+  }
+  function drawRealChart(){
+    const days={week:7,month:30,half:180,year:365}[curPeriod]||30;
+    const cutoff=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+    let src=weightLog.filter(w=>w.date>=cutoff);
+    if(curMetric==='fat')src=src.filter(w=>w.fat!=null);
+    if(!src.length){drawChart();return;}
+    const h2=player&&player.height?(player.height/100):1.68;
+    const values=src.map(w=>curMetric==='fat'?+w.fat:curMetric==='bmi'?+(w.kg/(h2*h2)).toFixed(1):+w.kg);
+    const labels=src.map(w=>w.date.slice(5).replace('-','.'));
+    const W=300,H=140,pad=24;
+    const mn=Math.min(...values)-0.3,mx=Math.max(...values)+0.3,rng=mx-mn||1;
+    const x=i=>pad+i*(W-2*pad)/Math.max(1,values.length-1);
+    const y=v=>H-pad-(v-mn)/rng*(H-2*pad);
+    const step=Math.max(1,Math.floor(values.length/5));
     let dots='',labs='',xl='';
-    v.forEach((val,i)=>{
-      dots+='<circle cx="'+x(i)+'" cy="'+y(val)+'" r="4" fill="#46d7ff"/>';
-      labs+='<text x="'+x(i)+'" y="'+(y(val)-10)+'" fill="#dcecff" font-size="11" text-anchor="middle" font-family="Exo 2">'+val+'</text>';
-      xl+='<text x="'+x(i)+'" y="'+(H-6)+'" fill="#7f9bc7" font-size="10" text-anchor="middle">'+l[i]+'</text>';
+    const pts=values.map((v,i)=>x(i)+','+y(v)).join(' ');
+    values.forEach((v,i)=>{
+      dots+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" fill="#46d7ff"/>';
+      if(i===0||i===values.length-1||i%step===0){
+        labs+='<text x="'+x(i)+'" y="'+(y(v)-10)+'" fill="#dcecff" font-size="10" text-anchor="middle" font-family="Exo 2">'+v+'</text>';
+        xl+='<text x="'+x(i)+'" y="'+(H-6)+'" fill="#7f9bc7" font-size="9" text-anchor="middle">'+labels[i]+'</text>';
+      }
     });
     document.getElementById('wchart').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%"><polyline points="'+pts+'" fill="none" stroke="#46d7ff" stroke-width="2.5"/><polygon points="'+pad+','+(H-pad)+' '+pts+' '+(W-pad)+','+(H-pad)+'" fill="rgba(70,215,255,0.10)"/>'+dots+labs+xl+'</svg>';
-    const avg=(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1);
-    const chg=(v[v.length-1]-v[0]).toFixed(1);
+    const avg=(values.reduce((a,b)=>a+b,0)/values.length).toFixed(1);
+    const chg=(values[values.length-1]-values[0]).toFixed(1);
     document.getElementById('ws-avg').textContent=avg;
     const ce=document.getElementById('ws-chg');
-    ce.textContent=(chg<=0?'▼ ':'▲ ')+Math.abs(chg);ce.style.color=chg<=0?'var(--ok)':'var(--danger)';
-    document.getElementById('ws-max').textContent=Math.max(...v).toFixed(1);
-    document.getElementById('ws-min').textContent=Math.min(...v).toFixed(1);
+    ce.textContent=(+chg<=0?'▼ ':'▲ ')+Math.abs(chg);ce.style.color=+chg<=0?'var(--ok)':'var(--danger)';
+    document.getElementById('ws-max').textContent=Math.max(...values).toFixed(1);
+    document.getElementById('ws-min').textContent=Math.min(...values).toFixed(1);
   }
   function setPeriod(btn,p){btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');curPeriod=p;drawChart();}
   function setMetric(btn,m){btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');curMetric=m;curPeriod='month';
