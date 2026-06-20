@@ -123,7 +123,7 @@
   .tile .big{font-size:26px;font-weight:700;margin-top:8px;font-family:"Exo 2"}
   .tile .sub{font-size:12px;color:var(--muted);margin-top:2px}
   .barmini{height:6px;border-radius:4px;background:rgba(0,0,0,.4);margin-top:10px;overflow:hidden;border:1px solid var(--line)}
-  .barmini>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));box-shadow:0 0 8px var(--cyan)}
+  .barmini>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
   .cam{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line-strong);border-radius:12px;padding:16px;background:linear-gradient(180deg,rgba(43,107,255,.18),rgba(10,18,40,.4));color:#fff;font-size:15px;letter-spacing:1px;cursor:pointer;box-shadow:0 0 18px rgba(43,107,255,.3);font-weight:600}
   .cam .ce{font-size:22px}
 
@@ -131,7 +131,7 @@
   .ring{width:150px;height:150px;margin:6px auto 4px;position:relative}
   .ring svg{transform:rotate(-90deg)}
   .ring .rc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .ring .rc .n{font-family:"Exo 2";font-size:30px;font-weight:900;color:#fff;text-shadow:0 0 14px rgba(70,215,255,.8)}
+  .ring .rc .n{font-family:"Exo 2";font-size:30px;font-weight:900;color:#fff}
   .ring .rc .l{font-size:12px;color:var(--muted);letter-spacing:2px}
   .macros{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
   .macro{text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;background:rgba(0,0,0,.22)}
@@ -295,6 +295,45 @@
   .ophotos{display:flex;gap:10px}
   .oph{flex:1;aspect-ratio:3/4;border:1px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--cyan);font-size:22px;cursor:pointer;background:rgba(0,0,0,.2)}
   .oph small{font-size:10px;color:var(--muted)}
+
+  /* ===== fullscreen overlay (профиль / весь топ) ===== */
+  .fullscreen{position:fixed;inset:0;z-index:75;background:radial-gradient(900px 500px at 50% -5%,rgba(43,107,255,.16),transparent 60%),var(--bg);display:none;flex-direction:column;max-width:430px;margin:0 auto;overflow-y:auto}
+  .fullscreen.show{display:flex}
+  .fs-head{display:flex;align-items:center;gap:12px;padding:16px 14px;border-bottom:1px solid var(--line);background:rgba(4,6,14,.92);flex:none}
+  .fs-back{font-size:30px;color:var(--cyan);cursor:pointer;line-height:1;font-family:"Exo 2"}
+  .fs-title{font-family:"Exo 2";font-size:14px;letter-spacing:3px;color:var(--cyan-soft);text-transform:uppercase}
+  .fs-body{flex:1;padding:18px 14px 40px;overflow-y:auto}
+  .prof-ava{width:88px;height:88px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-size:34px;font-weight:900;margin:0 auto 14px;background:rgba(43,107,255,.18);color:#fff;box-shadow:0 0 22px rgba(70,215,255,.25)}
+  .prof-name{font-family:"Exo 2";font-size:20px;font-weight:700;text-align:center;letter-spacing:2px}
+  .prof-sub{text-align:center;color:var(--muted);font-size:12px;margin-top:4px;letter-spacing:2px}
+
+  /* ===== шаги ===== */
+  .steps-tile{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:rgba(0,0,0,.25);margin-top:10px}
+  .steps-row{display:flex;align-items:center;gap:12px}
+  .steps-left{flex:1}
+  .steps-num{font-family:"Exo 2";font-size:28px;font-weight:900;color:#fff;line-height:1}
+  .steps-lbl{font-size:11px;color:var(--cyan);letter-spacing:2px;font-family:"Exo 2";margin-top:2px}
+  .steps-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .steps-btn{padding:9px 13px;border:1px solid var(--line-strong);border-radius:9px;background:rgba(43,107,255,.18);color:var(--cyan-soft);font-family:"Exo 2";font-size:11px;letter-spacing:1px;cursor:pointer;flex:none;white-space:nowrap}
+  .steps-btn.active{border-color:var(--ok);color:var(--ok);background:rgba(92,255,157,.08)}
+
+  /* ===== окно «Получено задание» ===== */
+  .qr-overlay{position:fixed;inset:0;z-index:88;display:none;align-items:center;justify-content:center;background:rgba(2,4,10,.85);backdrop-filter:blur(4px)}
+  .qr-overlay.show{display:flex;animation:rise .3s ease both}
+  .qr-box{width:88%;max-width:340px;background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:16px;overflow:hidden;box-shadow:0 0 40px rgba(70,215,255,.3)}
+  .qr-hd{background:rgba(43,107,255,.16);border-bottom:1px solid var(--line);padding:13px 16px;display:flex;align-items:center;gap:10px}
+  .qr-ic{width:30px;height:30px;border:1px solid var(--line-strong);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-weight:700;color:var(--cyan-soft);font-size:15px;flex:none}
+  .qr-ttl{font-family:"Exo 2";font-weight:700;font-size:14px;letter-spacing:2px;color:#fff;flex:1}
+  .qr-bd{padding:16px}
+  .qr-notice{text-align:center;font-size:14px;margin-bottom:10px}
+  .qr-notice b{color:var(--danger)}
+  .qr-goals-hd{font-family:"Exo 2";font-weight:700;letter-spacing:3px;font-size:13px;color:#fff;text-align:center;margin:10px 0 8px}
+  .qr-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(70,215,255,.1)}
+  .qr-row:last-of-type{border-bottom:none}
+  .qr-rn{flex:1;font-size:14px}
+  .qr-rc{font-family:"Exo 2";font-size:11px;color:var(--muted)}
+  .qr-warn{text-align:center;color:var(--danger);font-size:12px;margin-top:10px;line-height:1.5;padding:8px;border-top:1px solid rgba(255,92,122,.2)}
+  .qr-ok{width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#04101f;font-family:"Exo 2";font-weight:700;font-size:14px;letter-spacing:1px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -329,7 +368,7 @@
       <span class="gear" onclick="openSettings()">⚙</span>
       <div class="hero">
         <div class="portal"></div>
-        <div class="rank" id="rankBadge">E</div>
+        <div class="rank" id="rankBadge" onclick="openProfScreen()" style="cursor:pointer" title="Профиль">E</div>
         <div class="hname">ИГРОК · ЛЮБОВЬ</div>
         <div class="htitle">Пробуждённая · день 12</div>
         <div class="level-row"><span class="lv">LEVEL</span><span class="num" id="lvl">7</span></div>
@@ -362,6 +401,17 @@
       <div class="tiles">
         <div class="tile" onclick="go('nutri')"><div class="th">🔥 КАЛОРИИ</div><div class="big">1240<span style="font-size:13px;color:var(--muted)"> /1800</span></div><div class="sub">осталось 560 ккал</div><div class="barmini"><i style="width:69%"></i></div></div>
         <div class="tile" onclick="go('prog')"><div class="th">⚖ ВЕС</div><div class="big">62.4<span style="font-size:13px;color:var(--muted)"> кг</span></div><div class="sub" style="color:var(--ok)">▼ 0.3 за неделю</div><div class="barmini"><i style="width:55%"></i></div></div>
+      </div>
+      <div class="steps-tile">
+        <div class="steps-row">
+          <div class="steps-left">
+            <div class="steps-lbl">🚶 ШАГИ</div>
+            <div class="steps-num" id="stepsNow">0</div>
+            <div class="steps-sub" id="stepsSub">цель 10 000 шагов</div>
+          </div>
+          <button class="steps-btn" id="stepsBtn" onclick="requestSteps()">Запустить</button>
+        </div>
+        <div class="barmini" style="margin-top:10px"><i id="stepsFill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></i></div>
       </div>
     </div>
   </div>
@@ -522,6 +572,7 @@
         <div id="lb-list">
           <div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Загрузка рейтинга…</div>
         </div>
+        <div class="addf" style="margin-top:8px" onclick="openFullLeaderboard()">🏆 Весь топ — все игроки</div>
       </div>
       <div id="g-feed" style="display:none">
         <div class="feed" onclick="prof('Кирилл','Ранг B · LVL 24')"><div class="fav">К</div><div class="ft"><b>Кирилл</b> поднялся до <span class="hl">ранга B</span> ⚔<small>15 минут назад</small></div><div class="fire">🔥</div></div>
@@ -637,6 +688,70 @@
     <div class="pclose" onclick="closeProf()">закрыть</div>
   </div>
 </div>
+<!-- ======= ПОЛУЧЕНО ЗАДАНИЕ ======= -->
+<div class="qr-overlay" id="qroverlay">
+  <div class="qr-box">
+    <div class="qr-hd">
+      <div class="qr-ic">!</div>
+      <div class="qr-ttl">ЕЖЕДНЕВНЫЙ КВЕСТ</div>
+    </div>
+    <div class="qr-bd">
+      <div class="qr-notice">[<b>Получено задание</b>]</div>
+      <div class="qr-goals-hd">ЦЕЛИ</div>
+      <div id="qr-goals"></div>
+      <div class="qr-warn">ВНИМАНИЕ: невыполнение ежедневного квеста повлечёт <b>соответствующее наказание.</b></div>
+      <button class="qr-ok" onclick="closeQR()">⚔ ПРИНЯТЬ ЗАДАНИЕ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= ПРОФИЛЬ ИГРОКА (полный экран) ======= -->
+<div class="fullscreen" id="profscreen">
+  <div class="fs-head">
+    <span class="fs-back" onclick="closeProfScreen()">‹</span>
+    <div class="fs-title">Профиль игрока</div>
+  </div>
+  <div class="fs-body">
+    <div class="window">
+      <div class="sys-tag">⟢ player ⟢</div>
+      <div class="prof-ava" id="profAva">Л</div>
+      <div class="prof-name" id="profName">ИГРОК</div>
+      <div class="prof-sub" id="profSub">Ранг E · Уровень 1</div>
+      <div class="level-row" style="margin-top:14px"><span class="lv">LEVEL</span><span class="num" id="profLvl">1</span></div>
+      <div class="expbar" style="margin-top:8px"><div class="expfill" id="profExp"></div></div>
+      <div class="exptext"><span id="profExpNum">0</span> / <span id="profExpNeed">1000</span> EXP</div>
+      <div class="stats" style="margin-top:16px">
+        <div class="stat"><div class="k">💪 СИЛА</div><div class="v" id="pr-strength">0</div></div>
+        <div class="stat"><div class="k">⚡ ЛОВКОСТЬ</div><div class="v" id="pr-agility">0</div></div>
+        <div class="stat"><div class="k">❤️ ЗДОРОВЬЕ</div><div class="v" id="pr-health">0</div></div>
+        <div class="stat"><div class="k">🧠 ИНТЕЛЛЕКТ</div><div class="v" id="pr-intellect">0</div></div>
+      </div>
+    </div>
+    <div class="window">
+      <div class="sec-title">Серия дней <span style="color:var(--muted);font-size:11px" id="profRecTxt">рекорд: 0</span></div>
+      <div class="streak" id="profStreak">🔥 0 ДНЕЙ ПОДРЯД</div>
+    </div>
+    <div class="window">
+      <div class="sec-title">Достижения</div>
+      <div class="ach" id="profAch"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= ВЕСЬ ТОП (полный экран) ======= -->
+<div class="fullscreen" id="lbscreen">
+  <div class="fs-head">
+    <span class="fs-back" onclick="document.getElementById('lbscreen').classList.remove('show')">‹</span>
+    <div class="fs-title">Весь рейтинг</div>
+  </div>
+  <div class="fs-body" style="padding-bottom:20px">
+    <div class="window">
+      <div class="sys-tag">⟢ leaderboard ⟢</div>
+      <div id="lb-full"><div style="text-align:center;color:var(--muted);padding:20px">Загрузка…</div></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -706,6 +821,7 @@
       else{showOnboarding();}
     } else {cloudPush();bootHide();}
     loadLeaderboard();
+    if(player&&qSel.size)setTimeout(showQuestReceived,400);
   }
   async function loadLeaderboard(){
     const box=document.getElementById('lb-list');if(!box)return;
@@ -1054,7 +1170,136 @@
     }
     el.innerHTML=h;
   }
+  // ===== ПРОФИЛЬ (полный экран) =====
+  function openProfScreen(){
+    const name=player&&player.name||'ИГРОК';
+    document.getElementById('profAva').textContent=name[0].toUpperCase();
+    document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
+    document.getElementById('profSub').textContent='Ранг '+rankFor(lvl)+' · Уровень '+lvl;
+    document.getElementById('profLvl').textContent=lvl;
+    document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
+    document.getElementById('profExpNum').textContent=exp;
+    document.getElementById('profExpNeed').textContent=need;
+    ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
+    document.getElementById('profStreak').textContent='🔥 '+streak+(streak===1?' ДЕНЬ':streak>=2&&streak<=4?' ДНЯ':' ДНЕЙ')+' ПОДРЯД';
+    document.getElementById('profRecTxt').textContent='рекорд: '+streakBest;
+    const achDefs=[
+      {em:'🥉',n:'Ранг E',un:true},{em:'🔥',n:'7 дней',un:streak>=7},
+      {em:'💪',n:'100 трен.',un:stats.strength>=10},{em:'⚖',n:'−2 кг',un:false},
+      {em:'🥈',n:'Ранг D',un:lvl>=10},{em:'🏆',n:'30 дней',un:streak>=30},
+      {em:'⚡',n:'LVL 20',un:lvl>=20},{em:'👑',n:'Ранг S',un:lvl>=70}
+    ];
+    document.getElementById('profAch').innerHTML=achDefs.map(a=>'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>').join('');
+    document.getElementById('profscreen').classList.add('show');
+  }
+  function closeProfScreen(){document.getElementById('profscreen').classList.remove('show');}
+
+  // ===== ОКНО «ПОЛУЧЕНО ЗАДАНИЕ» =====
+  function showQuestReceived(){
+    if(!player)return;
+    const key='sl_qr_'+today();
+    if(localStorage.getItem(key))return;
+    let items=[];
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t]);});
+    qCustom.forEach(c=>items.push([c.n,c.xp,c.t]));
+    if(!items.length)return;
+    document.getElementById('qr-goals').innerHTML=items.map(([n,xp,t])=>{
+      const cnt=t&&/^\d/.test(t)?('[0/'+t+']'):(t?'['+t+']':'[0/1]');
+      return '<div class="qr-row"><span class="qr-rn">'+n+'</span><span class="qr-rc">'+cnt+'</span></div>';
+    }).join('');
+    document.getElementById('qroverlay').classList.add('show');
+    localStorage.setItem(key,'1');
+  }
+  function closeQR(){document.getElementById('qroverlay').classList.remove('show');}
+
+  // ===== ВЕСЬ ТОП =====
+  async function openFullLeaderboard(){
+    document.getElementById('lbscreen').classList.add('show');
+    const box=document.getElementById('lb-full');
+    box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Загрузка…</div>';
+    const res=await cloudCall({action:'leaderboard'});
+    const top=(res&&res.top)||[];
+    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Пока никого нет — стань первым! 💪</div>';return;}
+    const myName=player&&player.name;
+    box.innerHTML=top.map((p,i)=>{
+      const me=(p.name===myName)?' me':'';
+      const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
+      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.name||'?')[0]+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+' XP</div></div>';
+    }).join('');
+  }
+
+  // ===== ШАГИ (DeviceMotion педометр) =====
+  let stepsToday=0, stepsGoalN=10000;
+  let lastMagS=0, lastStepTs=0;
+  const STEP_THR=11, STEP_GAP=280;
+
+  function initSteps(){
+    const sd=DB.get('steps',null);
+    stepsToday=(sd&&sd.date===today())?sd.steps:0;
+    renderSteps();
+  }
+
+  function renderSteps(){
+    const el=document.getElementById('stepsNow');
+    const fill=document.getElementById('stepsFill');
+    const sub=document.getElementById('stepsSub');
+    if(el)el.textContent=stepsToday.toLocaleString('ru');
+    if(fill)fill.style.width=Math.min(100,stepsToday/stepsGoalN*100)+'%';
+    if(sub){
+      const left=Math.max(0,stepsGoalN-stepsToday);
+      sub.textContent=stepsToday>=stepsGoalN?'✓ Цель достигнута!':'осталось '+left.toLocaleString('ru')+' шагов';
+      if(stepsToday>=stepsGoalN)sub.style.color='var(--ok)';
+    }
+    // авто-засчёт квеста «Шаги» при достижении цели
+    if(stepsToday>=stepsGoalN){
+      const row=[...document.querySelectorAll('#qgoals .qrow')].find(r=>r.querySelector('.qrn').textContent.toLowerCase().includes('шаг'));
+      if(row&&!row.classList.contains('done'))toggle(row,30);
+    }
+  }
+
+  function requestSteps(){
+    const btn=document.getElementById('stepsBtn');
+    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+      // iOS 13+
+      DeviceMotionEvent.requestPermission().then(perm=>{
+        if(perm==='granted'){startPedometer();btn.textContent='✓ Считаем';btn.classList.add('active');}
+        else showManualSteps();
+      }).catch(()=>showManualSteps());
+    } else if(window.DeviceMotionEvent){
+      startPedometer();btn.textContent='✓ Считаем';btn.classList.add('active');
+    } else {
+      showManualSteps();
+    }
+  }
+
+  function showManualSteps(){
+    const n=prompt('Введи шаги за сегодня (или синхронизируй с Health вручную):');
+    if(n&&!isNaN(+n)&&+n>=0){
+      stepsToday=Math.round(+n);
+      DB.set('steps',{date:today(),steps:stepsToday});
+      renderSteps();
+      toast('🚶 Шаги обновлены: '+stepsToday.toLocaleString('ru'));
+    }
+  }
+
+  function startPedometer(){
+    toast('🚶 Шагомер запущен — держи телефон при себе');
+    window.addEventListener('devicemotion',function(e){
+      const a=e.accelerationIncludingGravity||e.acceleration;
+      if(!a)return;
+      const mag=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2);
+      const now=Date.now();
+      if(mag>STEP_THR&&lastMagS<=STEP_THR&&(now-lastStepTs)>STEP_GAP){
+        stepsToday++;lastStepTs=now;
+        DB.set('steps',{date:today(),steps:stepsToday});
+        renderSteps();
+      }
+      lastMagS=mag;
+    });
+  }
+
   init();
+  initSteps();
 </script>
 </body>
 </html>
