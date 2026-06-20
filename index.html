@@ -324,6 +324,12 @@
   .steps-btn{padding:9px 13px;border:1px solid var(--line-strong);border-radius:9px;background:rgba(43,107,255,.18);color:var(--cyan-soft);font-family:"Exo 2";font-size:11px;letter-spacing:1px;cursor:pointer;flex:none;white-space:nowrap}
   .steps-btn.active{border-color:var(--ok);color:var(--ok);background:rgba(92,255,157,.08)}
 
+  /* ===== привычка ===== */
+  .habit-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .hopt{padding:10px 8px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:9px;font-family:"Exo 2";font-size:13px;cursor:pointer;text-align:center;color:var(--text);transition:.15s}
+  .hopt.sel{border-color:var(--violet);background:rgba(138,43,226,.18);color:#fff}
+  .habit-fail{padding:7px 10px;border:1px solid rgba(255,60,60,.35);border-radius:9px;background:rgba(255,60,60,.08);color:var(--danger);font-family:"Exo 2";font-size:11px;cursor:pointer;letter-spacing:.5px}
+
   /* ===== окно «Получено задание» ===== */
   .qr-overlay{position:fixed;inset:0;z-index:88;display:none;align-items:center;justify-content:center;background:rgba(2,4,10,.85);backdrop-filter:blur(4px)}
   .qr-overlay.show{display:flex;animation:rise .3s ease both}
@@ -429,6 +435,21 @@
           <button class="steps-btn" id="stepsBtn" onclick="requestSteps()">Ввести</button>
         </div>
         <div class="barmini" style="margin-top:10px"><i id="stepsFill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></i></div>
+      </div>
+      <!-- тайл привычки -->
+      <div class="steps-tile" id="habitTile" style="margin-top:8px">
+        <div class="steps-row">
+          <div class="steps-left">
+            <div class="steps-lbl" id="habitLbl" style="color:var(--violet)">🚫 ВРЕДНАЯ ПРИВЫЧКА</div>
+            <div class="steps-num" id="habitDays">—</div>
+            <div class="steps-sub" id="habitSub">не добавлена</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+            <button class="steps-btn" id="habitBtn" onclick="openHabitModal()" style="background:rgba(138,43,226,.15);border-color:rgba(138,43,226,.4);color:var(--violet)">Добавить</button>
+            <button class="habit-fail" id="habitFail" onclick="habitFailed()" style="display:none">↺ Сорвался</button>
+          </div>
+        </div>
+        <div class="barmini" id="habitBar" style="margin-top:10px;display:none"><i id="habitFill" style="width:0%;background:linear-gradient(90deg,var(--violet),var(--cyan))"></i></div>
       </div>
     </div>
   </div>
@@ -723,6 +744,31 @@
     <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('metricsmodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
+<!-- ======= ПРИВЫЧКА: НАСТРОЙКА ======= -->
+<div class="modal" id="habitmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:center">
+    <div class="pn" style="margin-bottom:16px">🚫 Вредная привычка</div>
+    <div style="text-align:left;margin-bottom:14px">
+      <div style="font-family:'Exo 2';font-size:11px;color:var(--violet);letter-spacing:1px;margin-bottom:10px">ЧТО БРОСАЕШЬ?</div>
+      <div class="habit-opts" id="habitOpts">
+        <div class="hopt" data-n="Курение" data-i="🚭" onclick="selectHabitOpt(this)">🚭 Курение</div>
+        <div class="hopt" data-n="Алкоголь" data-i="🍺" onclick="selectHabitOpt(this)">🍺 Алкоголь</div>
+        <div class="hopt" data-n="Кофе" data-i="☕" onclick="selectHabitOpt(this)">☕ Кофе</div>
+        <div class="hopt" data-n="Сахар" data-i="🍬" onclick="selectHabitOpt(this)">🍬 Сахар</div>
+        <div class="hopt" data-n="Фастфуд" data-i="🍔" onclick="selectHabitOpt(this)">🍔 Фастфуд</div>
+        <div class="hopt" data-n="Соцсети" data-i="📱" onclick="selectHabitOpt(this)">📱 Соцсети</div>
+      </div>
+      <input id="habit-custom" placeholder="или введи своё..." style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-top:10px;box-sizing:border-box;outline:none" oninput="clearHabitOpts()">
+    </div>
+    <div style="text-align:left;margin-bottom:18px">
+      <div style="font-family:'Exo 2';font-size:11px;color:var(--violet);letter-spacing:1px;margin-bottom:8px">ДЕНЬ НАЧАЛА</div>
+      <input id="habit-date" type="date" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;box-sizing:border-box;outline:none">
+    </div>
+    <button class="enter" onclick="saveHabit()">✓ Сохранить</button>
+    <div class="pclose" style="margin-top:10px" onclick="document.getElementById('habitmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
+
 <!-- ======= ШАГИ: ВВОД ======= -->
 <div class="modal" id="stepsmodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard" style="text-align:center">
@@ -852,7 +898,11 @@
       clearTimeout(tm);return await r.json();}
     catch(e){return {error:String(e)};}
   }
-  function cloudState(){return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats};}
+  function cloudState(){
+    const sd=DB.get('steps',null);
+    return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats,
+      stepsCloud:sd,habitCloud:DB.get('habit',null)};
+  }
   let pushT;
   function cloudPush(){if(!player)return;clearTimeout(pushT);pushT=setTimeout(()=>{cloudCall({action:'push',uid:getUid(),name:player.name,state:cloudState()});},800);}
   function hydrate(s){
@@ -860,6 +910,9 @@
     exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
     stats=s.stats||{strength:0,agility:0,health:0,intellect:0};
     DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
+    // синхронизируем шаги и привычку из облака
+    if(s.stepsCloud)applyCloudSteps(s.stepsCloud);
+    if(s.habitCloud&&!DB.get('habit',null)){habit=s.habitCloud;DB.set('habit',habit);}
     applyPlayer();document.getElementById('onb').classList.add('hide');
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
@@ -1378,11 +1431,35 @@
     ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
     document.getElementById('profStreak').textContent='🔥 '+streak+(streak===1?' ДЕНЬ':streak>=2&&streak<=4?' ДНЯ':' ДНЕЙ')+' ПОДРЯД';
     document.getElementById('profRecTxt').textContent='рекорд: '+streakBest;
+    const habitDays=habit?Math.max(0,Math.floor((Date.now()-new Date(habit.startDate))/86400000)):0;
     const achDefs=[
-      {em:'🥉',n:'Ранг E',un:true},{em:'🔥',n:'7 дней',un:streak>=7},
-      {em:'💪',n:'100 трен.',un:stats.strength>=10},{em:'⚖',n:'−2 кг',un:false},
-      {em:'🥈',n:'Ранг D',un:lvl>=10},{em:'🏆',n:'30 дней',un:streak>=30},
-      {em:'⚡',n:'LVL 20',un:lvl>=20},{em:'👑',n:'Ранг S',un:lvl>=70}
+      // Старт
+      {em:'🥉',n:'Ранг E',un:true},
+      {em:'🌱',n:'Первый шаг',un:lvl>=2},
+      // Серия квестов
+      {em:'🔥',n:'3 дня подряд',un:streak>=3},
+      {em:'🔥',n:'7 дней',un:streak>=7},
+      {em:'🏆',n:'30 дней',un:streak>=30},
+      {em:'💎',n:'100 дней',un:streak>=100},
+      // Уровни
+      {em:'🥈',n:'Ранг D',un:lvl>=10},
+      {em:'🥇',n:'Ранг C',un:lvl>=20},
+      {em:'🔵',n:'Ранг B',un:lvl>=35},
+      {em:'🔴',n:'Ранг A',un:lvl>=50},
+      {em:'⚡',n:'LVL 20',un:lvl>=20},
+      {em:'👑',n:'Ранг S',un:lvl>=70},
+      // Статы
+      {em:'💪',n:'Силач',un:stats.strength>=20},
+      {em:'⚡',n:'Ловкач',un:stats.agility>=20},
+      {em:'🧠',n:'Интеллект',un:stats.intellect>=20},
+      {em:'❤️',n:'Здоровяк',un:stats.health>=20},
+      // Шаги
+      {em:'🚶',n:'10к шагов',un:stepsToday>=10000},
+      {em:'🏃',n:'10 дней ходьбы',un:false},
+      // Привычка
+      {em:'🚫',n:'7 без привычки',un:habitDays>=7},
+      {em:'💜',n:'30 без привычки',un:habitDays>=30},
+      {em:'🌟',n:'100 без привычки',un:habitDays>=100},
     ];
     document.getElementById('profAch').innerHTML=achDefs.map(a=>'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>').join('');
     document.getElementById('profscreen').classList.add('show');
@@ -1529,8 +1606,120 @@
     prev.classList.add('show');
   }
 
+  // ===== ВРЕДНАЯ ПРИВЫЧКА =====
+  let habit=null;
+  let habitSelN=null,habitSelI=null;
+
+  function initHabit(){
+    habit=DB.get('habit',null);
+    renderHabit();
+  }
+
+  function renderHabit(){
+    const lbl=document.getElementById('habitLbl');
+    const days=document.getElementById('habitDays');
+    const sub=document.getElementById('habitSub');
+    const btn=document.getElementById('habitBtn');
+    const fail=document.getElementById('habitFail');
+    const bar=document.getElementById('habitBar');
+    const fill=document.getElementById('habitFill');
+    if(!habit){
+      if(lbl)lbl.textContent='🚫 ВРЕДНАЯ ПРИВЫЧКА';
+      if(days)days.textContent='—';
+      if(sub){sub.textContent='не добавлена';sub.style.color='var(--muted)';}
+      if(btn){btn.textContent='Добавить';}
+      if(fail)fail.style.display='none';
+      if(bar)bar.style.display='none';
+      return;
+    }
+    const start=new Date(habit.startDate);
+    const dayN=Math.max(0,Math.floor((Date.now()-start)/(86400000)));
+    if(lbl)lbl.textContent=(habit.icon||'🚫')+' БЕЗ '+habit.name.toUpperCase();
+    if(days)days.textContent=dayN;
+    const milestone=dayN>=100?'🏆 Легенда!':dayN>=30?'💪 30+ дней!':dayN>=7?'🔥 7+ дней!':'цель: 7 дней';
+    const d=habit.startDate;
+    if(sub){sub.textContent='с '+d.slice(8)+'.'+d.slice(5,7)+' · '+milestone;sub.style.color=dayN>=7?'var(--ok)':'var(--muted)';}
+    if(btn)btn.textContent='⚙';
+    if(fail)fail.style.display='';
+    if(bar)bar.style.display='';
+    if(fill){
+      const next=dayN>=100?100:dayN>=30?100:dayN>=7?30:7;
+      fill.style.width=Math.min(100,dayN/next*100)+'%';
+    }
+  }
+
+  function openHabitModal(){
+    habitSelN=null;habitSelI=null;
+    document.querySelectorAll('.hopt').forEach(h=>h.classList.remove('sel'));
+    document.getElementById('habit-custom').value='';
+    const dateEl=document.getElementById('habit-date');
+    if(dateEl)dateEl.value=habit?habit.startDate:today();
+    if(habit){
+      document.querySelectorAll('.hopt').forEach(h=>{
+        if(h.dataset.n===habit.name){h.classList.add('sel');habitSelN=habit.name;habitSelI=habit.icon;}
+      });
+      if(!habitSelN)document.getElementById('habit-custom').value=habit.name;
+    }
+    document.getElementById('habitmodal').classList.add('show');
+  }
+
+  function selectHabitOpt(el){
+    document.querySelectorAll('.hopt').forEach(h=>h.classList.remove('sel'));
+    el.classList.add('sel');
+    habitSelN=el.dataset.n;habitSelI=el.dataset.i;
+    document.getElementById('habit-custom').value='';
+  }
+
+  function clearHabitOpts(){
+    document.querySelectorAll('.hopt').forEach(h=>h.classList.remove('sel'));
+    habitSelN=null;habitSelI=null;
+  }
+
+  function saveHabit(){
+    const custom=document.getElementById('habit-custom').value.trim();
+    const name=custom||habitSelN;
+    const icon=custom?'🚫':(habitSelI||'🚫');
+    const dateVal=document.getElementById('habit-date').value;
+    if(!name){toast('Выбери или введи привычку');return;}
+    if(!dateVal){toast('Укажи дату начала');return;}
+    habit={name,icon,startDate:dateVal};
+    DB.set('habit',habit);
+    renderHabit();
+    document.getElementById('habitmodal').classList.remove('show');
+    toast(icon+' Трекер запущен: без '+name.toLowerCase());
+  }
+
+  function habitFailed(){
+    const btn=document.getElementById('habitFail');
+    if(btn.dataset.confirm){
+      habit={...habit,startDate:today()};
+      DB.set('habit',habit);
+      renderHabit();
+      toast('↺ Начинаем заново — ты справишься! 💪');
+      delete btn.dataset.confirm;
+      btn.textContent='↺ Сорвался';
+    } else {
+      btn.textContent='Точно?';
+      btn.dataset.confirm='1';
+      setTimeout(()=>{if(btn.dataset.confirm){btn.textContent='↺ Сорвался';delete btn.dataset.confirm;}},3000);
+    }
+  }
+
+  // ===== iOS SHORTCUTS ДЛЯ ШАГОВ =====
+  // Endpoint для Shortcuts: POST {action:'steps', uid, steps, date} → sync edge function
+  // initSteps читает шаги из облака при cloudInit (через pull → state.stepsCloud)
+  function applyCloudSteps(stepsCloud){
+    if(!stepsCloud)return;
+    if(stepsCloud.date===today()&&stepsCloud.steps>stepsToday){
+      stepsToday=stepsCloud.steps;
+      DB.set('steps',{date:today(),steps:stepsToday});
+      renderSteps();
+    }
+  }
+
   init();
   initSteps();
+  initHabit();
 </script>
 </body>
 </html>
