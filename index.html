@@ -426,7 +426,7 @@
             <div class="steps-num" id="stepsNow">0</div>
             <div class="steps-sub" id="stepsSub">цель 10 000 шагов</div>
           </div>
-          <button class="steps-btn" id="stepsBtn" onclick="requestSteps()">Запустить</button>
+          <button class="steps-btn" id="stepsBtn" onclick="requestSteps()">Ввести</button>
         </div>
         <div class="barmini" style="margin-top:10px"><i id="stepsFill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></i></div>
       </div>
@@ -723,6 +723,20 @@
     <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('metricsmodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
+<!-- ======= ШАГИ: ВВОД ======= -->
+<div class="modal" id="stepsmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:center">
+    <div class="pn" style="margin-bottom:6px">🚶 Шаги</div>
+    <div class="pr" style="font-size:13px;margin-bottom:18px;line-height:1.5">Открой <b>Health</b> (iPhone) или <b>Google Fit / Samsung Health</b> (Android), посмотри сегодняшние шаги и введи сюда</div>
+    <input id="steps-inp" type="number" inputmode="numeric" placeholder="0" style="width:100%;padding:14px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:32px;font-weight:700;text-align:center;margin-bottom:14px;box-sizing:border-box;outline:none">
+    <button class="enter" onclick="saveManualSteps()">✓ Записать</button>
+    <div style="margin:14px 0;color:var(--muted);font-size:12px;letter-spacing:1px">— ИЛИ —</div>
+    <button id="pedoBtn" onclick="startPedometerFromModal()" style="width:100%;padding:11px;background:rgba(43,107,255,.15);border:1px solid var(--line-strong);border-radius:9px;color:var(--cyan-soft);font-family:'Exo 2';font-size:12px;letter-spacing:1px;cursor:pointer">📡 ЗАПУСТИТЬ ШАГОМЕР (акселерометр)</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">считает пока приложение открыто</div>
+    <div class="pclose" style="margin-top:14px" onclick="document.getElementById('stepsmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
+
 <!-- ======= ПОЛУЧЕНО ЗАДАНИЕ ======= -->
 <div class="qr-overlay" id="qroverlay">
   <div class="qr-box">
@@ -1293,7 +1307,7 @@
     '🧠 Интеллект':[['Чтение',40,'5 стр.'],['Изучение языка',40,'15 мин'],['Медитация',30,'10 мин']],
     '❤️ Здоровье':[['Вода по норме',30,'1900 мл'],['Сон 8 часов',40,''],['День без сахара',40,'']]
   };
-  let qSel=new Set(['💪 Сила|Приседания','💪 Сила|Отжимания','⚡ Ловкость|Шаги','🧠 Интеллект|Чтение','❤️ Здоровье|Вода по норме']);
+  let qSel=new Set();
   let qCustom=[];
   function openQB(){renderQB();document.getElementById('qbmodal').classList.add('show');}
   function renderQB(){
@@ -1327,8 +1341,11 @@
     let items=[];
     for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t,sphereOf[cat]]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
-    if(!items.length)items=[['Приседания',50,'5','strength']];
     const g=document.getElementById('qgoals');
+    if(!items.length){
+      g.innerHTML='<div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:14px;line-height:1.6">Квест не настроен<br><button onclick="openQB()" style="margin-top:14px;background:var(--cyan);color:#000;border:none;padding:8px 20px;border-radius:8px;font-family:\'Exo 2\';font-size:13px;font-weight:700;cursor:pointer">⚙ Настроить квест</button></div>';
+      return;
+    }
     g.innerHTML=items.map(([n,xp,t,sp])=>{
       const cnt=t&&/^\d/.test(t)?('[0/'+t+']'):(t?'[ '+t+' ]':'[0/1]');
       return '<div class="qrow" data-sphere="'+(sp||'health')+'" onclick="toggle(this,'+xp+')"><span class="qrn">'+n+'</span><span class="qrc">'+cnt+'</span><span class="qrk">✓</span></div>';
@@ -1436,27 +1453,34 @@
   }
 
   function requestSteps(){
-    const btn=document.getElementById('stepsBtn');
-    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-      // iOS 13+
-      DeviceMotionEvent.requestPermission().then(perm=>{
-        if(perm==='granted'){startPedometer();btn.textContent='✓ Считаем';btn.classList.add('active');}
-        else showManualSteps();
-      }).catch(()=>showManualSteps());
-    } else if(window.DeviceMotionEvent){
-      startPedometer();btn.textContent='✓ Считаем';btn.classList.add('active');
-    } else {
-      showManualSteps();
-    }
+    const inp=document.getElementById('steps-inp');
+    if(inp)inp.value=stepsToday>0?stepsToday:'';
+    document.getElementById('stepsmodal').classList.add('show');
+    setTimeout(()=>{if(inp)inp.focus();},200);
   }
 
-  function showManualSteps(){
-    const n=prompt('Введи шаги за сегодня (или синхронизируй с Health вручную):');
-    if(n&&!isNaN(+n)&&+n>=0){
-      stepsToday=Math.round(+n);
-      DB.set('steps',{date:today(),steps:stepsToday});
-      renderSteps();
-      toast('🚶 Шаги обновлены: '+stepsToday.toLocaleString('ru'));
+  function saveManualSteps(){
+    const n=document.getElementById('steps-inp').value;
+    if(!n||isNaN(+n)||+n<0){toast('Введи число шагов');return;}
+    stepsToday=Math.round(+n);
+    DB.set('steps',{date:today(),steps:stepsToday});
+    renderSteps();
+    document.getElementById('stepsmodal').classList.remove('show');
+    toast('🚶 Шаги обновлены: '+stepsToday.toLocaleString('ru'));
+  }
+
+  function startPedometerFromModal(){
+    document.getElementById('stepsmodal').classList.remove('show');
+    const btn=document.getElementById('stepsBtn');
+    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+      DeviceMotionEvent.requestPermission().then(perm=>{
+        if(perm==='granted'){startPedometer();btn.textContent='📡 Считаем';btn.classList.add('active');}
+        else toast('Нет доступа к акселерометру — введи вручную');
+      }).catch(()=>toast('Ошибка доступа к акселерометру'));
+    } else if(window.DeviceMotionEvent){
+      startPedometer();btn.textContent='📡 Считаем';btn.classList.add('active');
+    } else {
+      toast('Акселерометр недоступен');
     }
   }
 
