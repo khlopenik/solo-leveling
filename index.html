@@ -295,6 +295,13 @@
   .ophotos{display:flex;gap:10px}
   .oph{flex:1;aspect-ratio:3/4;border:1px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--cyan);font-size:22px;cursor:pointer;background:rgba(0,0,0,.2)}
   .oph small{font-size:10px;color:var(--muted)}
+  .kbju-prev{border:1px solid var(--line-strong);border-radius:12px;padding:14px 12px;background:rgba(43,107,255,.12);margin:14px 0;display:none;animation:rise .3s ease both}
+  .kbju-prev.show{display:block}
+  .kbju-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .kbju-item{text-align:center}
+  .kbju-val{font-family:"Exo 2";font-weight:800;font-size:20px;color:#fff}
+  .kbju-lbl{font-size:9px;color:var(--cyan);letter-spacing:1px;margin-top:3px;font-family:"Exo 2"}
+  .kbju-note{text-align:center;color:var(--muted);font-size:11px;margin-top:10px;line-height:1.4}
 
   /* ===== fullscreen overlay (профиль / весь топ) ===== */
   .fullscreen{position:fixed;inset:0;z-index:75;background:radial-gradient(900px 500px at 50% -5%,rgba(43,107,255,.16),transparent 60%),var(--bg);display:none;flex-direction:column;max-width:430px;margin:0 auto;overflow-y:auto}
@@ -344,10 +351,20 @@
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
-    <div class="orow"><div><label>Дата рождения</label><input id="o-dob" type="date"></div><div><label>Пол</label><select id="o-sex"><option>Женский</option><option>Мужской</option></select></div></div>
-    <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62"></div></div>
-    <label>Цель</label><select id="o-goal"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
-    <label>Уровень активности</label><select id="o-act"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
+    <div class="orow"><div><label>Дата рождения</label><input id="o-dob" type="date" onchange="updateKBJUPreview()"></div><div><label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select></div></div>
+    <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
+    <label>Цель</label><select id="o-goal" onchange="updateKBJUPreview()"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
+    <label>Уровень активности</label><select id="o-act" onchange="updateKBJUPreview()"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
+    <div class="kbju-prev" id="kbjuprev">
+      <div style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:3px;text-align:center">⟢ ТВОЯ НОРМА ⟢</div>
+      <div class="kbju-grid">
+        <div class="kbju-item"><div class="kbju-val" id="kp-kcal">—</div><div class="kbju-lbl">ККАЛ</div></div>
+        <div class="kbju-item"><div class="kbju-val" id="kp-p">—</div><div class="kbju-lbl">БЕЛКИ, г</div></div>
+        <div class="kbju-item"><div class="kbju-val" id="kp-f">—</div><div class="kbju-lbl">ЖИРЫ, г</div></div>
+        <div class="kbju-item"><div class="kbju-val" id="kp-c">—</div><div class="kbju-lbl">УГЛЕВ., г</div></div>
+      </div>
+      <div class="kbju-note" id="kp-note"></div>
+    </div>
     <label>Анализ тела по фото <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— по желанию</span></label>
     <div class="ophotos">
       <div class="oph" onclick="toast('📷 Фото спереди')">＋<small>спереди</small></div>
@@ -1457,6 +1474,35 @@
       }
       lastMagS=mag;
     });
+  }
+
+  function updateKBJUPreview(){
+    const w=parseFloat(document.getElementById('o-w').value);
+    const h=parseFloat(document.getElementById('o-h').value);
+    const prev=document.getElementById('kbjuprev');
+    if(!w||!h||w<20||h<100){prev.classList.remove('show');return;}
+    const dob=document.getElementById('o-dob').value;
+    const sex=document.getElementById('o-sex').value;
+    const goal=document.getElementById('o-goal').value;
+    const act=document.getElementById('o-act').value;
+    let age=25;
+    if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
+    const bmr=sex==='Мужской'?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161;
+    const mult={'Новичок (мало двигаюсь)':1.2,'Средний (тренируюсь иногда)':1.375,'Высокий (активный спорт)':1.55}[act]||1.2;
+    let cal=Math.round(bmr*mult);
+    let note='';
+    if(goal==='Похудеть'){cal=Math.round(cal*0.85);note='дефицит 15% · похудение';}
+    else if(goal==='Набрать массу'){cal=Math.round(cal*1.1);note='профицит 10% · набор массы';}
+    else note='поддержание веса';
+    const protG=Math.round(w*(goal==='Набрать массу'?2.0:1.6));
+    const fatG=Math.round(w*0.9);
+    const carbG=Math.max(50,Math.round((cal-protG*4-fatG*9)/4));
+    document.getElementById('kp-kcal').textContent=cal;
+    document.getElementById('kp-p').textContent=protG;
+    document.getElementById('kp-f').textContent=fatG;
+    document.getElementById('kp-c').textContent=carbG;
+    document.getElementById('kp-note').textContent=note;
+    prev.classList.add('show');
   }
 
   init();
