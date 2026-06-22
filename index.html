@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-7';
+  var APP_VERSION='2026-06-22-8';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -668,11 +668,12 @@
     <div id="qb-body"></div>
     <div style="margin-top:10px">
       <div style="font-family:'Exo 2';font-size:12px;color:var(--cyan);margin-bottom:6px">＋ Своё упражнение</div>
-      <div style="display:flex;gap:6px">
-        <input id="qb-cn" placeholder="название" style="flex:2;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px">
-        <input id="qb-ct" placeholder="цель" style="flex:1;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px">
-        <select id="qb-cc" style="flex:1;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:13px"><option>💪 Сила</option><option>⚡ Ловкость</option><option>🧠 Интеллект</option><option>❤️ Здоровье</option></select>
-      </div>
+      <label style="font-family:'Exo 2';font-size:10px;color:var(--muted);letter-spacing:1px;display:block;margin:0 0 3px">Название</label>
+      <input id="qb-cn" placeholder="напр. Берпи" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box;margin-bottom:8px">
+      <label style="font-family:'Exo 2';font-size:10px;color:var(--muted);letter-spacing:1px;display:block;margin:0 0 3px">Цель — необязательно</label>
+      <input id="qb-ct" placeholder="напр. 20 повторений" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box;margin-bottom:8px">
+      <label style="font-family:'Exo 2';font-size:10px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 3px">Категория — обязательно</label>
+      <select id="qb-cc" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box"><option>💪 Сила</option><option>⚡ Ловкость</option><option>🧠 Интеллект</option><option>❤️ Здоровье</option></select>
       <button class="poke" style="width:100%;margin-top:8px" onclick="addCustomEx()">＋ Добавить</button>
     </div>
     <div class="rnote" style="margin-top:10px">Минимум по 1 из каждой сферы. Больше целей = выше дневной потолок XP (в рейтинге учитывается объём).</div>
