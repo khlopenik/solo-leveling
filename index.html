@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-9';
+  var APP_VERSION='2026-06-23-10';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -225,9 +225,13 @@
   .ws .wsv{font-family:"Exo 2";font-weight:700;font-size:15px;color:#fff}
   .ws .wsl{font-size:10px;color:var(--muted);margin-top:3px}
   .ach{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
-  .badge{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:rgba(0,0,0,.25);font-size:24px}
+  .badge{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:rgba(0,0,0,.25);font-size:24px;overflow:hidden;position:relative}
   .badge small{font-size:9px;color:var(--muted);letter-spacing:.5px}
   .badge.lock{opacity:.35;filter:grayscale(1)}
+  .badge.imgbadge{padding:0}
+  .badge.imgbadge img{width:100%;height:100%;object-fit:cover}
+  .ach-group-title{font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan);margin:16px 0 6px;text-transform:uppercase}
+  .ach-group-title:first-child{margin-top:0}
   .streak{display:flex;align-items:center;justify-content:center;gap:8px;font-family:"Exo 2";font-weight:700;font-size:24px;color:var(--gold)}
   .daycells{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:14px}
   .dcell{aspect-ratio:1;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:rgba(0,0,0,.22)}
@@ -941,6 +945,7 @@
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
+    myRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');
     let h=top.slice(0,10).map((p,i)=>{
       const me=(p.name===myName)?' me':'';const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
       return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
@@ -1704,38 +1709,63 @@
     el.innerHTML=h;
   }
   // ===== ДОСТИЖЕНИЯ (общий список, используется в Профиле и Прогрессе) =====
-  function getAchDefs(){
+  const ACH_DIR='assets/achievements/';
+  let myRankPos=null;
+  function getAchGroups(){
     const habitDays=habit?Math.max(0,Math.floor((Date.now()-new Date(habit.startDate))/86400000)):0;
+    const pos=myRankPos;
     return [
-      // Старт
-      {em:'🥉',n:'Ранг E',un:true},
-      {em:'🌱',n:'Первый шаг',un:lvl>=2},
-      // Серия квестов
-      {em:'🔥',n:'3 дня подряд',un:streak>=3},
-      {em:'🔥',n:'7 дней',un:streak>=7},
-      {em:'🏆',n:'30 дней',un:streak>=30},
-      {em:'💎',n:'100 дней',un:streak>=100},
-      // Уровни
-      {em:'🥈',n:'Ранг D',un:lvl>=10},
-      {em:'🥇',n:'Ранг C',un:lvl>=20},
-      {em:'🔵',n:'Ранг B',un:lvl>=35},
-      {em:'🔴',n:'Ранг A',un:lvl>=50},
-      {em:'⚡',n:'LVL 20',un:lvl>=20},
-      {em:'👑',n:'Ранг S',un:lvl>=70},
-      // Статы
-      {em:'💪',n:'Силач',un:stats.strength>=20},
-      {em:'⚡',n:'Ловкач',un:stats.agility>=20},
-      {em:'🧠',n:'Интеллект',un:stats.intellect>=20},
-      {em:'❤️',n:'Здоровяк',un:stats.health>=20},
-      // Привычка
-      {em:'🚫',n:'7 без привычки',un:habitDays>=7},
-      {em:'💜',n:'30 без привычки',un:habitDays>=30},
-      {em:'🌟',n:'100 без привычки',un:habitDays>=100},
+      {title:'Достижения',items:[
+        {img:'g1_r0_c0',un:true},
+        {img:'g1_r0_c1',un:streak>=1},
+        {img:'g1_r0_c2',un:streak>=3},
+        {img:'g1_r0_c3',un:streak>=7},
+        {img:'g1_r0_c4',un:streak>=10},
+        {img:'g1_r1_c0',un:streak>=21},
+        {img:'g1_r1_c1',un:streak>=1},
+        {img:'g1_r1_c2',un:streak>=30},
+        {img:'g1_r1_c3',un:false},
+        {img:'g1_r1_c4',un:lvl>=2},
+        {img:'g1_r2_c0',un:streak>=5},
+        {img:'g1_r2_c1',un:false},
+        {img:'g1_r2_c2',un:streakBest>=14},
+        {img:'g1_r2_c3',un:streak>=90},
+        {img:'g1_r2_c4',un:streak>=180},
+      ]},
+      {title:'Серия дней',items:[
+        {img:'g5_r0_c0',un:streak>=1},{img:'g5_r0_c1',un:streak>=3},{img:'g5_r0_c2',un:streak>=7},
+        {img:'g5_r0_c3',un:streak>=14},{img:'g5_r0_c4',un:streak>=21},{img:'g5_r0_c5',un:streak>=30},
+        {img:'g5_r0_c6',un:streak>=45},{img:'g5_r1_c0',un:streak>=60},{img:'g5_r1_c1',un:streak>=90},
+        {img:'g5_r1_c2',un:streak>=120},{img:'g5_r1_c3',un:streak>=150},{img:'g5_r1_c4',un:streak>=180},
+        {img:'g5_r1_c5',un:streak>=210},{img:'g5_r1_c6',un:streak>=365},
+      ]},
+      {title:'Место в рейтинге',items:[
+        {img:'g6_r0_c0',un:pos===1},{img:'g6_r0_c1',un:pos===2},{img:'g6_r0_c2',un:pos===3},
+        {img:'g6_r0_c3',un:pos!=null&&pos<=10},{img:'g6_r0_c4',un:pos!=null&&pos<=50},
+        {img:'g6_r1_c0',un:pos!=null&&pos<=100},{img:'g6_r1_c1',un:pos!=null&&pos<=500},
+        {img:'g6_r1_c2',un:pos!=null&&pos<=1000},{img:'g6_r1_c3',un:false},{img:'g6_r1_c4',un:pos===1},
+      ]},
+      {title:'Характеристики',items:[
+        {em:'💪',n:'Силач',un:stats.strength>=20},
+        {em:'⚡',n:'Ловкач',un:stats.agility>=20},
+        {em:'🧠',n:'Интеллект',un:stats.intellect>=20},
+        {em:'❤️',n:'Здоровяк',un:stats.health>=20},
+      ]},
+      {title:'Без привычки',items:[
+        {em:'🚫',n:'7 без привычки',un:habitDays>=7},
+        {em:'💜',n:'30 без привычки',un:habitDays>=30},
+        {em:'🌟',n:'100 без привычки',un:habitDays>=100},
+      ]},
     ];
   }
   function renderAch(elId){
     const el=document.getElementById(elId);if(!el)return;
-    el.innerHTML=getAchDefs().map(a=>'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>').join('');
+    el.innerHTML=getAchGroups().map(g=>'<div class="ach-group-title">'+g.title+'</div><div class="ach">'+
+      g.items.map(a=>a.img?
+        '<div class="badge imgbadge'+(a.un?'':' lock')+'"><img src="'+ACH_DIR+a.img+'.png" alt=""></div>'
+        :'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>'
+      ).join('')+'</div>'
+    ).join('');
   }
 
   // ===== ПРОФИЛЬ (полный экран) =====
@@ -1783,6 +1813,8 @@
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;
+    const myFullPos=top.findIndex(p=>p.name===myName);
+    myRankPos=myFullPos>=0?myFullPos+1:null;renderAch('progAch');renderAch('profAch');
     box.innerHTML=top.map((p,i)=>{
       const me=(p.name===myName)?' me':'';
       const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
