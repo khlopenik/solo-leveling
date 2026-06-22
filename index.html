@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-5';
+  var APP_VERSION='2026-06-22-6';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -654,8 +654,8 @@
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
-    <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Сбросить профиль</span><button class="poke" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfile()">Сбросить</button></div>
-    <div class="rnote" style="margin-top:8px">Сброс удалит игрока и весь прогресс на этом устройстве и начнёт заново.</div>
+    <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Удалить аккаунт</span><button class="poke" id="resetBtn" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfileTap(this)">Удалить</button></div>
+    <div class="rnote" style="margin-top:8px">Удалит игрока и весь прогресс — локально и в облаке — и откроет создание нового игрока. Нажать дважды для подтверждения.</div>
     <div class="pclose" style="text-align:center" onclick="document.getElementById('setmodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
@@ -983,8 +983,17 @@
   function closeProf(){document.getElementById('modal').classList.remove('show');}
   function openPriv(){document.getElementById('privmodal').classList.add('show');}
   function openSettings(){document.getElementById('setmodal').classList.add('show');}
-  function resetProfile(){
-    if(!confirm('Сбросить профиль и весь прогресс на этом устройстве?'))return;
+  function resetProfileTap(btn){
+    if(!btn.dataset.armed){
+      btn.dataset.armed='1';btn.textContent='Точно? Ещё раз';
+      clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.dataset.armed='';btn.textContent='Удалить';},4000);
+      return;
+    }
+    btn.textContent='Удаляю…';btn.disabled=true;
+    resetProfile();
+  }
+  async function resetProfile(){
+    try{await cloudCall({action:'delete',uid:getUid()});}catch(e){}
     ['player','progress','qlog','qsel','qcustom','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit'].forEach(k=>localStorage.removeItem('sl_'+k));
     Object.keys(localStorage).filter(k=>k.startsWith('sl_qr_')).forEach(k=>localStorage.removeItem(k));
     location.reload();
