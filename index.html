@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-7';
+  var APP_VERSION='2026-06-23-8';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -864,7 +864,7 @@
 <script>
   try{if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}}catch(e){}
   let exp=0,lvl=1,need=1000,streak=0,streakBest=0,streakDate=null;
-  const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S']];
+  const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S'],[100,'SSS']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem('sl_'+k,JSON.stringify(v))}};
