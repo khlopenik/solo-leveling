@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+from inactivity import check_inactivity
+
 load_dotenv()
 
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -32,6 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def main() -> None:
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.job_queue.run_repeating(check_inactivity, interval=3600, first=30)
     app.run_polling()
 
 

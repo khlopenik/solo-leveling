@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-11';
+  var APP_VERSION='2026-06-23-12';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -930,12 +930,24 @@
     applyPlayer();document.getElementById('onb').classList.add('hide');
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
+  function applyPendingPenalty(row){
+    const pct=row&&+row.pending_penalty||0;
+    if(pct<=0)return;
+    const factor=1-pct/100;
+    ['strength','agility','health','intellect'].forEach(k=>stats[k]=Math.floor((stats[k]||0)*factor));
+    saveStats();renderStats();
+    toast('⚠ Штраф за неактивность: −'+pct+'% ко всем характеристикам');
+    cloudCall({action:'ack_penalty',uid:getUid()});
+  }
   async function cloudInit(){
     if(!player){
       const res=await cloudCall({action:'pull',uid:getUid()});
-      if(res&&res.player&&res.player.state){hydrate(res.player.state);bootHide();}
+      if(res&&res.player&&res.player.state){hydrate(res.player.state);applyPendingPenalty(res.player);bootHide();}
       else{showOnboarding();}
-    } else {cloudPush();bootHide();}
+    } else {
+      cloudPush();bootHide();
+      cloudCall({action:'pull',uid:getUid()}).then(res=>{if(res&&res.player)applyPendingPenalty(res.player);});
+    }
     loadLeaderboard();
     if(player&&qSel.size)setTimeout(showQuestReceived,400);
   }
