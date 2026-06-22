@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-14';
+  var APP_VERSION='2026-06-23-15';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -930,7 +930,7 @@
     applyPlayer();document.getElementById('onb').classList.add('hide');
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
-  const COMEBACK_BONUS=10; // фикс. бонус за возврат, всегда меньше минимального штрафа (40) — итог всегда минус
+  const COMEBACK_BONUS=20; // фикс. бонус-"статуя" за возврат, всегда меньше минимального штрафа (100) — итог всегда минус
   function applyPendingPenalty(row){
     const gross=row&&+row.pending_penalty||0;
     if(gross<=0)return;
@@ -938,7 +938,7 @@
     const before=exp;
     exp=Math.max(0,exp-net);
     saveProgress();render();
-    toast('⚠ Вернулся, но без тебя система просела: −'+net+' эксп ('+before+' → '+exp+')');
+    toast('🗿 Статуя заметила твоё возвращение, но просадку не простила: −'+net+' эксп ('+before+' → '+exp+')');
     cloudCall({action:'ack_penalty',uid:getUid()});
   }
   async function cloudInit(){
