@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-8';
+  var APP_VERSION='2026-06-23-9';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -867,7 +867,8 @@
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S'],[100,'SSS']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
-  const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem('sl_'+k,JSON.stringify(v))}};
+  const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+    set(k,v){try{localStorage.setItem('sl_'+k,JSON.stringify(v));return true}catch(e){console.error('DB.set failed for',k,e);if(typeof toast==='function')toast('⚠ Не хватило места в памяти телефона — попробуй фото поменьше');return false}}};
   const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
   let player=DB.get('player',null);
   function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});cloudPush();}
@@ -1285,8 +1286,8 @@
     const sex=document.getElementById('o-sex').value;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
       goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:today()};
-    if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // сразу показать своё фото, пока ИИ рисует аниме-версию
-    DB.set('player',player);
+    DB.set('player',player); // сохраняем профиль без фото — иначе на телефоне можно упереться в лимит localStorage и регистрация молча оборвётся
+    if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // показываем своё фото только в памяти, пока ИИ рисует аниме-версию
     // новый игрок начинает с нуля
     exp=0;lvl=1;need=1000;saveProgress();
     stats={strength:0,agility:0,health:0,intellect:0};saveStats();renderStats();
