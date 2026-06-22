@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-10';
+  var APP_VERSION='2026-06-23-11';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -985,9 +985,17 @@
       else toast('+'+xp+' XP');
     }
     const nm=el.querySelector('.qrn').textContent, sp=el.dataset.sphere||'health', q=qlogGet();
-    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;}
-    else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);}
-    saveStats();renderStats();qlogSet(q);saveProgress();render();checkStreak();
+    const reps=+el.dataset.reps||0;
+    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;if(reps)addExerciseTotal(nm,reps);}
+    else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);if(reps)addExerciseTotal(nm,-reps);}
+    saveStats();renderStats();qlogSet(q);saveProgress();render();checkStreak();renderAch('progAch');renderAch('profAch');
+  }
+  // ===== СУММАРНЫЕ ПОВТОРЕНИЯ УПРАЖНЕНИЙ (для ачивок за упражнения) =====
+  let exerciseTotals={};
+  function loadExerciseTotals(){exerciseTotals=DB.get('exerciseTotals',{});}
+  function addExerciseTotal(name,delta){
+    exerciseTotals[name]=Math.max(0,(exerciseTotals[name]||0)+delta);
+    DB.set('exerciseTotals',exerciseTotals);
   }
   function go(name){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1362,6 +1370,7 @@
     const mcd=DB.get('macros',null);if(mcd&&mcd.date===today())macros={p:mcd.p||0,f:mcd.f||0,c:mcd.c||0};
     loadWeightLog();
     loadMeasurements();
+    loadExerciseTotals();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
@@ -1691,7 +1700,8 @@
     }
     g.innerHTML=items.map(([n,xp,t,sp])=>{
       const cnt=t&&/^\d/.test(t)?('[0/'+t+']'):(t?'[ '+t+' ]':'[0/1]');
-      return '<div class="qrow" data-sphere="'+(sp||'health')+'" onclick="toggle(this,'+xp+')"><span class="qrn">'+n+'</span><span class="qrc">'+cnt+'</span><span class="qrk">✓</span></div>';
+      const reps=/^\d+$/.test(t)?t:'';
+      return '<div class="qrow" data-sphere="'+(sp||'health')+'" data-reps="'+reps+'" onclick="toggle(this,'+xp+')"><span class="qrn">'+n+'</span><span class="qrc">'+cnt+'</span><span class="qrk">✓</span></div>';
     }).join('');
     const done=qlogGet().done;
     g.querySelectorAll('.qrow').forEach(row=>{
@@ -1711,6 +1721,29 @@
   // ===== ДОСТИЖЕНИЯ (общий список, используется в Профиле и Прогрессе) =====
   const ACH_DIR='assets/achievements/';
   let myRankPos=null;
+  // привязка иконок-упражнений к реально считаемым суммам (только то, что есть в qLib);
+  // остальные иконки честно остаются заблокированными — для них нет данных
+  const EXERCISE_ACH_MAP={
+    g2_r0_c0:['Приседания',30], g2_r0_c1:['Приседания',100],
+    g2_r2_c0:['Отжимания',20], g2_r2_c1:['Отжимания',60],
+    g2_r2_c2:['Пресс',30], g2_r2_c3:['Пресс',100],
+    g2_r2_c4:['__alldone__',1],
+    g4_r4_c3:['Приседания',30],
+  };
+  function getExerciseAchItems(){
+    const sheets=[['g2',3,5],['g3',4,6],['g4',5,6]];
+    const items=[];
+    sheets.forEach(([g,rows,cols])=>{
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+        const key=g+'_r'+r+'_c'+c;
+        const map=EXERCISE_ACH_MAP[key];
+        let un=false;
+        if(map){const[ex,need]=map;un=ex==='__alldone__'?streak>=1:(exerciseTotals[ex]||0)>=need;}
+        items.push({img:key,un});
+      }
+    });
+    return items;
+  }
   function getAchGroups(){
     const habitDays=habit?Math.max(0,Math.floor((Date.now()-new Date(habit.startDate))/86400000)):0;
     const pos=myRankPos;
@@ -1745,6 +1778,7 @@
         {img:'g6_r1_c0',un:pos!=null&&pos<=100},{img:'g6_r1_c1',un:pos!=null&&pos<=500},
         {img:'g6_r1_c2',un:pos!=null&&pos<=1000},{img:'g6_r1_c3',un:false},{img:'g6_r1_c4',un:pos===1},
       ]},
+      {title:'Упражнения',items:getExerciseAchItems()},
       {title:'Характеристики',items:[
         {em:'💪',n:'Силач',un:stats.strength>=20},
         {em:'⚡',n:'Ловкач',un:stats.agility>=20},
