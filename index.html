@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-4';
+  var APP_VERSION='2026-06-23-5';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -240,7 +240,8 @@
   .rankrow .pos{width:26px;font-family:"Exo 2";font-weight:900;text-align:center;color:var(--muted)}
   .rankrow.me{background:rgba(43,107,255,.12);border-radius:10px;border-bottom:none}
   .rankrow.me .pos{color:var(--gold)}
-  .ava{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;background:rgba(43,107,255,.16);flex:none}
+  .ava{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;background:rgba(43,107,255,.16);flex:none;overflow:hidden}
+  .ava img,.prof-ava img{width:100%;height:100%;object-fit:cover}
   .rankrow .un{flex:1;font-weight:600}
   .rankrow .un small{display:block;color:var(--muted);font-weight:400;font-size:12px}
   .rankrow .xp{font-family:"Exo 2";color:var(--cyan-soft);font-size:13px}
@@ -328,7 +329,7 @@
   .fs-back{font-size:30px;color:var(--cyan);cursor:pointer;line-height:1;font-family:"Exo 2"}
   .fs-title{font-family:"Exo 2";font-size:14px;letter-spacing:3px;color:var(--cyan-soft);text-transform:uppercase}
   .fs-body{flex:1;padding:18px 14px 40px;overflow-y:auto}
-  .prof-ava{width:88px;height:88px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-size:34px;font-weight:900;margin:0 auto 14px;background:rgba(43,107,255,.18);color:#fff;box-shadow:0 0 22px rgba(70,215,255,.25)}
+  .prof-ava{width:88px;height:88px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-size:34px;font-weight:900;margin:0 auto 14px;background:rgba(43,107,255,.18);color:#fff;box-shadow:0 0 22px rgba(70,215,255,.25);overflow:hidden}
   .prof-name{font-family:"Exo 2";font-size:20px;font-weight:700;text-align:center;letter-spacing:2px}
   .prof-sub{text-align:center;color:var(--muted);font-size:12px;margin-top:4px;letter-spacing:2px}
 
@@ -375,6 +376,11 @@
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
+    <label>Аватар <span style="color:var(--muted);font-weight:400">— по желанию, сделаем в стиле аниме</span></label>
+    <div class="ophotos" style="justify-content:flex-start">
+      <div class="oph" id="o-ava-tile" onclick="document.getElementById('o-avatar').click()">＋<small>фото</small></div>
+    </div>
+    <input type="file" accept="image/*" id="o-avatar" style="display:none" onchange="onAvatarPhotoSelected(event,true)">
     <label>Дата рождения — день</label><select id="o-dob-d" onchange="syncDob()"></select>
     <label>Дата рождения — месяц</label><select id="o-dob-m" onchange="syncDob()"></select>
     <label>Дата рождения — год</label><select id="o-dob-y" onchange="syncDob()"></select>
@@ -656,6 +662,8 @@
   <div class="pcard" style="text-align:left">
     <div class="pn" style="text-align:center">⚙ Настройки</div>
     <div class="pr" style="text-align:center;margin-bottom:14px">Игрок и приложение</div>
+    <div class="priv-row"><span class="pl">🎴 Аватар (аниме)</span><button class="poke" onclick="document.getElementById('avatar-reupload').click()">Загрузить</button></div>
+    <input type="file" accept="image/*" id="avatar-reupload" style="display:none" onchange="onAvatarReupload(event)">
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
@@ -930,9 +938,9 @@
     const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
     let h=top.slice(0,10).map((p,i)=>{
       const me=(p.name===myName)?' me':'';const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
-      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.name||'?')[0]+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
+      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
     }).join('');
-    if(myPos>=10){const p=top[myPos];h+='<div style="text-align:center;color:var(--muted);font-size:18px;margin:4px 0">⋯</div><div class="rankrow me"><div class="pos">'+(myPos+1)+'</div><div class="ava">'+(myName||'?')[0]+'</div><div class="un">Ты <small style="color:var(--gold)">(ты)</small></div><div class="xp">'+(p.exp||0)+'</div></div>';}
+    if(myPos>=10){const p=top[myPos];h+='<div style="text-align:center;color:var(--muted);font-size:18px;margin:4px 0">⋯</div><div class="rankrow me"><div class="pos">'+(myPos+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(myName||'?')[0])+'</div><div class="un">Ты <small style="color:var(--gold)">(ты)</small></div><div class="xp">'+(p.exp||0)+'</div></div>';}
     box.innerHTML=h;
   }
   function render(){
@@ -1113,6 +1121,48 @@
 
   // ===== АНАЛИЗ ТЕЛА ПО ФОТО =====
   const BODY_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-body';
+  const AVATAR_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/generate-avatar';
+  let avatarPhoto=null;
+  function onAvatarPhotoSelected(ev){
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      avatarPhoto=reader.result.split(',')[1];
+      const tile=document.getElementById('o-ava-tile');
+      if(tile)tile.innerHTML='<img src="'+reader.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
+    };
+    reader.readAsDataURL(file);
+  }
+  async function generateAvatar(){
+    if(!avatarPhoto)return;
+    try{
+      const r=await fetch(AVATAR_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:avatarPhoto,uid:getUid()})});
+      const res=await r.json();
+      if(!r.ok||res.error||!res.url)throw new Error(res.error||'ошибка генерации');
+      player.avatarUrl=res.url;DB.set('player',player);
+      applyAvatar();cloudPush();
+      toast('✓ Аватар в стиле Solo Leveling готов');
+    }catch(e){toast('Не удалось сделать аватар, попробуй другое фото');}
+    avatarPhoto=null;
+  }
+  function onAvatarReupload(ev){
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=async()=>{
+      avatarPhoto=reader.result.split(',')[1];
+      document.getElementById('setmodal').classList.remove('show');
+      toast('⚡ Рисую твой аватар в стиле Solo Leveling…');
+      await generateAvatar();
+      document.getElementById('avatar-reupload').value='';
+    };
+    reader.readAsDataURL(file);
+  }
+  function applyAvatar(){
+    const url=player&&player.avatarUrl;
+    const el=document.getElementById('profAva');if(!el)return;
+    if(url)el.innerHTML='<img src="'+url+'" alt="avatar">';
+    else el.textContent=(player&&player.name||'Игрок')[0].toUpperCase();
+  }
   let bodyPhotos={front:null,side:null,back:null};
   function onBodyPhotoSelected(angle,ev,isOnboarding){
     const file=ev.target.files&&ev.target.files[0];if(!file)return;
@@ -1223,6 +1273,10 @@
     applyPlayer();
     document.getElementById('onb').classList.add('hide');
     toast('⚔ Добро пожаловать, '+name+'! Собери свой ежедневный квест');
+    if(avatarPhoto){
+      toast('⚡ Рисую твой аватар в стиле Solo Leveling…');
+      await generateAvatar();
+    }
     if(bodyPhotos.front){
       toast('⚡ Анализирую твои фото тела…');
       await runBodyAnalysis();
@@ -1235,6 +1289,7 @@
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
     applySilhouette();
+    applyAvatar();
     normCal=calcNormCal(player);
     normMacros=calcNormMacros(normCal,player);
     renderWater();render();renderNutrition();
@@ -1620,7 +1675,7 @@
   // ===== ПРОФИЛЬ (полный экран) =====
   function openProfScreen(){
     const name=player&&player.name||'ИГРОК';
-    document.getElementById('profAva').textContent=name[0].toUpperCase();
+    applyAvatar();
     document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
     document.getElementById('profSub').textContent='Ранг '+rankFor(lvl)+' · Уровень '+lvl;
     document.getElementById('profLvl').textContent=lvl;
@@ -1665,7 +1720,7 @@
     box.innerHTML=top.map((p,i)=>{
       const me=(p.name===myName)?' me':'';
       const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
-      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.name||'?')[0]+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+' XP</div></div>';
+      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+' XP</div></div>';
     }).join('');
   }
 
