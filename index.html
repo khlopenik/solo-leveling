@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-2';
+  var APP_VERSION='2026-06-23-3';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -538,7 +538,9 @@
       <div class="improw">
         <button class="imp" onclick="openMetricsForm()">✍ Вручную</button>
         <button class="imp" onclick="openBodyPhotoModal()">🧍 По фото</button>
+        <button class="imp" onclick="document.getElementById('scale-screenshot-input').click()">📷 Скрин с весов</button>
       </div>
+      <input type="file" accept="image/*" id="scale-screenshot-input" style="display:none" onchange="onScaleScreenshotSelected(event)">
       <div class="comp" id="compGrid"></div>
       <div class="rnote" style="margin-top:10px">Оценки приблизительные (скрин с весов / фото / ручной ввод). Не медицинская точность.</div>
     </div>
@@ -1135,7 +1137,7 @@
       const r=await fetch(BODY_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photos,height:h,weight:w,sex})});
       const res=await r.json();
       if(!r.ok||res.error)throw new Error(res.error||'ошибка анализа');
-      const bm={date:today(),weight:w,fat:res.fat,muscle:res.muscle,water:res.water,visceral:res.visceral};
+      const bm={date:today(),weight:w,fat:res.fat,muscle:res.muscle,water:res.water,visceral:res.visceral,boneMass:res.boneMass,protein:res.protein};
       Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
       bodyMetrics=bm;DB.set('bodyMetrics',bm);
       if(bodyPhotos.front){DB.set('bodyPhoto',bodyPhotos.front);applySilhouette();}
@@ -1151,6 +1153,34 @@
     }
   }
   function analyzeBodyPhotos(){runBodyAnalysis(document.getElementById('bp-result'));}
+
+  const SCALE_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-scale';
+  function onScaleScreenshotSelected(ev){
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=async()=>{
+      const b64=reader.result.split(',')[1];
+      toast('⚡ Считываю скрин с весов…');
+      try{
+        const r=await fetch(SCALE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:b64})});
+        const res=await r.json();
+        if(!r.ok||res.error)throw new Error(res.error||'ошибка распознавания');
+        const bm=DB.get('bodyMetrics',{})||{};
+        const fields=['weight','fat','muscle','water','visceral','bmi','bmr','boneMass','protein'];
+        const found=[];
+        fields.forEach(f=>{if(res[f]!=null){bm[f]=res[f];found.push(f);}});
+        bm.date=today();
+        bodyMetrics=bm;DB.set('bodyMetrics',bm);
+        if(bm.weight){const entry={date:today(),kg:bm.weight};if(bm.fat)entry.fat=bm.fat;const idx=weightLog.findIndex(w=>w.date===today());if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);DB.set('weightLog',weightLog);updateWeightTile();drawChart();}
+        renderBodyMetrics(bm);
+        toast(found.length?'✓ Считано: '+found.length+' показателей':'Не нашёл цифр на скрине');
+      }catch(e){
+        toast('Не удалось прочитать скрин с весов');
+      }
+      document.getElementById('scale-screenshot-input').value='';
+    };
+    reader.readAsDataURL(file);
+  }
 
   function addMeal(){
     if(!lastRes)return;
@@ -1360,7 +1390,7 @@
     const w=(bm&&bm.weight)||(player&&player.weight);
     const h=player&&player.height;
     const bmiVal=bm&&bm.bmi?bm.bmi:(w&&h?(w/(h/100)**2).toFixed(1):null);
-    const bmr=calcBMR();
+    const bmr=(bm&&bm.bmr)||calcBMR();
     function tag(cls,txt){return'<span class="cb'+(cls?' '+cls:'')+'">'+txt+'</span>';}
     function bmiTag(v){if(!v)return tag('','нет данных');v=+v;return v<18.5?tag('low','недовес'):v<25?tag('ok','норма'):v<30?tag('amb','избыток'):tag('over','ожирение');}
     function fatTag(v){if(!v)return tag('','нет данных');v=+v;const m=player&&player.sex==='Мужской';return m?(v<6?tag('low','очень мало'):v<18?tag('ok','норма'):v<25?tag('amb','выше'):tag('over','избыток')):(v<14?tag('low','очень мало'):v<25?tag('ok','норма'):v<32?tag('amb','выше'):tag('over','избыток'));}
@@ -1373,6 +1403,8 @@
       ['💧','Вода',bm&&bm.water?bm.water+' %':'—',bm&&bm.water?tag('ok','норма'):tag('','нет данных')],
       ['🫁','Висцеральный жир',bm&&bm.visceral?bm.visceral:'—',bm&&bm.visceral?(+bm.visceral<=9?tag('ok','норма'):tag('over','выше нормы')):tag('','нет данных')],
       ['🔥','Базовый обмен',bmr?bmr+' ккал':'—',tag('','—')],
+      ['🦴','Костная масса',bm&&bm.boneMass?bm.boneMass+' кг':'—',tag('','—')],
+      ['🍗','Белок',bm&&bm.protein?bm.protein+' %':'—',tag('','—')],
       ['📏','Рост',h?h+' см':'—',tag('','—')],
     ];
     comp.innerHTML=rows.map(([em,n,v,st])=>'<div class="crow"><span class="cn">'+em+' '+n+'</span><span class="cv">'+v+'</span>'+st+'</div>').join('');
