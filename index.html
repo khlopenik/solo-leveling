@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-8';
+  var APP_VERSION='2026-06-22-9';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1228,6 +1228,7 @@
     // квест-конфиг
     const qs=DB.get('qsel',null);if(qs){qSel=new Set(qs);}
     qCustom=DB.get('qcustom',[]);
+    qTargets=DB.get('qtargets',{});
     // вода (сброс по дню)
     const wd=DB.get('water',null);wNow=(wd&&wd.date===today())?wd.ml:0;
     // питание (сброс по дню)
@@ -1462,12 +1463,13 @@
     document.querySelectorAll('#periods button').forEach((b,i)=>b.classList.toggle('on',i===1));drawChart();}
   const qLib={
     '💪 Сила':[['Приседания',50,'5'],['Отжимания',50,'5'],['Подтягивания',80,'5'],['Планка',40,'60 сек'],['Пресс',40,'20']],
-    '⚡ Ловкость':[['Шаги',30,''],['Бег',60,'2 км'],['Прыжки',30,'30'],['Скакалка',40,'100'],['Растяжка',30,'10 мин']],
+    '⚡ Ловкость':[['Шаги',30,'8000'],['Бег',60,'2 км'],['Прыжки',30,'30'],['Скакалка',40,'100'],['Растяжка',30,'10 мин']],
     '🧠 Интеллект':[['Чтение',40,'5 стр.'],['Изучение языка',40,'15 мин'],['Медитация',30,'10 мин']],
     '❤️ Здоровье':[['Вода по норме',30,'1900 мл'],['Сон 8 часов',40,''],['День без сахара',40,'']]
   };
   let qSel=new Set();
   let qCustom=[];
+  let qTargets={};
   function openQB(){renderQB();document.getElementById('qbmodal').classList.add('show');}
   function renderQB(){
     let h='';
@@ -1475,7 +1477,11 @@
       h+='<div style="font-family:\'Exo 2\';font-size:13px;color:var(--cyan-soft);margin:12px 0 6px">'+cat+'</div>';
       qLib[cat].forEach(([n,xp,t])=>{
         const key=cat+'|'+n, on=qSel.has(key);
-        h+='<div class="priv-row"><span class="pl">'+n+(t?' <span style="color:var(--muted);font-size:12px">· '+t+'</span>':'')+' <span style="color:var(--gold);font-size:11px">+'+xp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
+        const cur=qTargets[key]!=null?qTargets[key]:t;
+        const isNum=/^\d+$/.test(t);
+        const tgtHtml=isNum?'<input type="number" min="1" value="'+cur+'" onclick="event.stopPropagation()" onchange="setQTarget(\''+key+'\',this.value)" style="width:54px;padding:4px 6px;margin-left:6px;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;color:var(--cyan);font-family:\'Rajdhani\';font-size:13px;text-align:center">'
+          :(t?' <span style="color:var(--muted);font-size:12px">· '+t+'</span>':'');
+        h+='<div class="priv-row"><span class="pl">'+n+tgtHtml+' <span style="color:var(--gold);font-size:11px">+'+xp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
       });
       qCustom.filter(c=>c.cat===cat).forEach((c,i)=>{
         h+='<div class="priv-row"><span class="pl">'+c.n+(c.t?' <span style="color:var(--muted);font-size:12px">· '+c.t+'</span>':'')+' <span style="color:var(--gold);font-size:11px">+'+c.xp+'</span> <span style="color:var(--muted);font-size:11px">(своё)</span></span><div class="sw on" onclick="this.classList.toggle(\'on\')"></div></div>';
@@ -1484,6 +1490,7 @@
     document.getElementById('qb-body').innerHTML=h;
   }
   function toggleEx(el,key){el.classList.toggle('on');if(qSel.has(key))qSel.delete(key);else qSel.add(key);}
+  function setQTarget(key,val){val=Math.max(1,parseInt(val)||1);qTargets[key]=String(val);}
   function addCustomEx(){
     const n=document.getElementById('qb-cn').value.trim();if(!n){toast('Впиши название');return;}
     const t=document.getElementById('qb-ct').value.trim();
@@ -1492,13 +1499,13 @@
     renderQB();toast('＋ Добавлено: '+n);
   }
   function saveQuest(){
-    DB.set('qsel',[...qSel]);DB.set('qcustom',qCustom);
+    DB.set('qsel',[...qSel]);DB.set('qcustom',qCustom);DB.set('qtargets',qTargets);
     document.getElementById('qbmodal').classList.remove('show');
     renderQuest();toast('✓ Квест обновлён');
   }
   function renderQuest(){
     let items=[];
-    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t,sphereOf[cat]]);});
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,qTargets[key]!=null?qTargets[key]:t,sphereOf[cat]]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
     const g=document.getElementById('qgoals');
     if(!items.length){
@@ -1583,7 +1590,7 @@
     const key='sl_qr_'+today();
     if(localStorage.getItem(key))return;
     let items=[];
-    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{if(qSel.has(cat+'|'+n))items.push([n,xp,t]);});
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,qTargets[key]!=null?qTargets[key]:t]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t]));
     if(!items.length)return;
     document.getElementById('qr-goals').innerHTML=items.map(([n,xp,t])=>{
