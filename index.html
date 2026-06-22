@@ -485,7 +485,8 @@
     </div>
     <div class="window">
       <div class="sec-title">Добавить приём пищи</div>
-      <div class="photobox" onclick="toast('📷 Открыть камеру / галерею')"><span style="font-size:34px">📷</span><div style="color:var(--muted);font-size:13px;margin-top:6px">Сфоткай еду или этикетку</div></div>
+      <input type="file" accept="image/*" capture="environment" id="food-photo-input" style="display:none" onchange="onFoodPhotoSelected(event)">
+      <div class="photobox" id="food-photobox" onclick="document.getElementById('food-photo-input').click()"><span style="font-size:34px">📷</span><div style="color:var(--muted);font-size:13px;margin-top:6px">Сфоткай еду или этикетку</div></div>
       <textarea id="fd-desc" class="fdesc" placeholder="Что съел? Примерно, на глаз. Напр.: «сырок глазированный, 1 шт» или «кофе с молоком 250 мл, молока ~40 мл»"></textarea>
       <button class="wadd" onclick="analyze()">⚡ Проанализировать</button>
       <div class="result" id="fd-res"></div>
@@ -1014,29 +1015,44 @@
   let eaten=0, normCal=1800, goalType='deficit';
   let macros={p:0,f:0,c:0}, normMacros={p:90,f:60,c:120};
   let weightLog=[], bodyMetrics=null;
-  const foodDB=[
-    {k:['сырок','глазир'],n:'Сырок глазированный',kc:280,p:8,f:18,c:22},
-    {k:['кофе','молок'],n:'Кофе с молоком',kc:60,p:3,f:3,c:5},
-    {k:['салат','куриц','куриный'],n:'Куриный салат',kc:320,p:30,f:14,c:12},
-    {k:['банан'],n:'Банан',kc:95,p:1,f:0,c:23},
-    {k:['яблок'],n:'Яблоко',kc:80,p:0,f:0,c:21},
-    {k:['овсян','каша'],n:'Овсяная каша',kc:230,p:8,f:5,c:40},
-    {k:['яйц','омлет'],n:'Омлет',kc:200,p:14,f:15,c:2}
-  ];
+  const FOOD_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-food';
   let lastRes=null;
-  function analyze(){
-    const t=(document.getElementById('fd-desc').value||'').toLowerCase();
+  let foodPhotoB64=null;
+  function onFoodPhotoSelected(ev){
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      foodPhotoB64=reader.result.split(',')[1];
+      const box=document.getElementById('food-photobox');
+      box.innerHTML='<img src="'+reader.result+'" style="max-width:100%;max-height:140px;border-radius:8px">'+
+        '<div style="color:var(--ok);font-size:12px;margin-top:6px">✓ Фото добавлено · нажми «убрать», чтобы заменить</div>'+
+        '<div style="color:var(--muted);font-size:11px;text-decoration:underline;margin-top:4px" onclick="event.stopPropagation();clearFoodPhoto()">убрать фото</div>';
+    };
+    reader.readAsDataURL(file);
+  }
+  function clearFoodPhoto(){
+    foodPhotoB64=null;
+    document.getElementById('food-photo-input').value='';
+    const box=document.getElementById('food-photobox');
+    box.innerHTML='<span style="font-size:34px">📷</span><div style="color:var(--muted);font-size:13px;margin-top:6px">Сфоткай еду или этикетку</div>';
+  }
+  async function analyze(){
+    const t=(document.getElementById('fd-desc').value||'').trim();
+    if(!t&&!foodPhotoB64){toast('Опиши блюдо или приложи фото');return;}
     const res=document.getElementById('fd-res');
     res.innerHTML='<div style="text-align:center;color:var(--cyan);font-family:\'Exo 2\';padding:10px">⚡ Система анализирует…</div>';
-    setTimeout(()=>{
-      let f=foodDB.find(x=>x.k.some(w=>t.includes(w)));
-      if(!f)f={n:t?('Блюдо: '+t.slice(0,28)):'Приём пищи',kc:350,p:15,f:14,c:35};
+    try{
+      const r=await fetch(FOOD_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t||undefined,imageBase64:foodPhotoB64||undefined})});
+      const f=await r.json();
+      if(!r.ok||f.error)throw new Error(f.error||'ошибка анализа');
       lastRes=f;
-      res.innerHTML='<div class="rcard"><div class="rname">'+f.n+'</div><div class="rk">≈ '+f.kc+' ккал</div>'+
+      res.innerHTML='<div class="rcard"><div class="rname">'+f.name+'</div><div class="rk">≈ '+f.kc+' ккал</div>'+
         '<div class="rm"><span>Б <b>'+f.p+'</b></span><span>Ж <b>'+f.f+'</b></span><span>У <b>'+f.c+'</b></span></div>'+
         '<button class="radd" onclick="addMeal()">＋ Добавить в дневник</button>'+
-        '<div class="rnote">Оценка приблизительная (±20%). Можно поправить вручную.</div></div>';
-    },1100);
+        '<div class="rnote">Оценка ИИ, приблизительная (±20%). Можно поправить вручную.</div></div>';
+    }catch(e){
+      res.innerHTML='<div style="text-align:center;color:var(--danger);font-size:13px;padding:10px">Не удалось проанализировать. Попробуй ещё раз или опиши подробнее.</div>';
+    }
   }
   function addMeal(){
     if(!lastRes)return;
