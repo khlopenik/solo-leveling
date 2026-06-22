@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-16';
+  var APP_VERSION='2026-06-23-17';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -878,6 +878,7 @@
   let player=DB.get('player',null);
   function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});cloudPush();}
   function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function checkStreak(){
     // если все цели квеста выполнены сегодня и день ещё не зачтён — серия +1
     const rows=document.querySelectorAll('#qgoals .qrow');
@@ -1336,8 +1337,13 @@
       if(d.getMonth()===t.getMonth()&&d.getDate()===t.getDate())setTimeout(()=>toast('🎂 С днём рождения! +500 XP буст'),900);}
     wGoal=Math.round(w*30/50)*50;
     const sex=document.getElementById('o-sex').value;
+    // если до полуночи остаётся меньше 2 часов — первый день квеста не урезаем,
+    // а считаем его с завтрашней даты (полные 24 часа на сборку квеста)
+    const NEW_DAY_BUFFER=2*3600;
+    const startsNextDay=secsUntilMidnight()<NEW_DAY_BUFFER;
+    if(startsNextDay)secs=secsUntilMidnight()+86400;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
-      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:today()};
+      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today()};
     DB.set('player',player); // сохраняем профиль без фото — иначе на телефоне можно упереться в лимит localStorage и регистрация молча оборвётся
     if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // показываем своё фото только в памяти, пока ИИ рисует аниме-версию
     // новый игрок начинает с нуля
