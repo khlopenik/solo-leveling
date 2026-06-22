@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-6';
+  var APP_VERSION='2026-06-23-7';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -79,7 +79,9 @@
   }
   @keyframes pulse{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:.9;transform:translateX(-50%) scale(1.12)}}
   .hero>*{position:relative;z-index:1}
-  .rank{display:inline-block;width:66px;height:66px;line-height:66px;border:2px solid var(--line-strong);border-radius:50%;font-family:"Exo 2";font-size:30px;font-weight:900;color:var(--gold);text-shadow:0 0 16px rgba(255,214,107,.8);box-shadow:0 0 22px rgba(255,214,107,.25),inset 0 0 18px rgba(255,214,107,.12);margin-bottom:10px}
+  .rank{display:inline-block;width:66px;height:66px;line-height:66px;border:2px solid var(--line-strong);border-radius:50%;font-family:"Exo 2";font-size:30px;font-weight:900;color:var(--gold);text-shadow:0 0 16px rgba(255,214,107,.8);box-shadow:0 0 22px rgba(255,214,107,.25),inset 0 0 18px rgba(255,214,107,.12);margin-bottom:6px;overflow:hidden}
+  .rank img{width:100%;height:100%;object-fit:cover}
+  .rank-tag{color:var(--gold);font-size:12px;letter-spacing:3px;font-family:"Exo 2";font-weight:700;text-shadow:0 0 10px rgba(255,214,107,.6);margin-bottom:8px}
   .hname{font-size:18px;letter-spacing:2px;font-weight:700}
   .htitle{color:var(--muted);font-size:13px;margin-top:2px;letter-spacing:1px}
   .level-row{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:12px 0 6px}
@@ -425,8 +427,9 @@
       <div class="hero">
         <div class="portal"></div>
         <div class="rank" id="rankBadge" onclick="openProfScreen()" style="cursor:pointer" title="Профиль">E</div>
+        <div class="rank-tag" id="rankTag">РАНГ E</div>
         <div class="hname">ИГРОК · ЛЮБОВЬ</div>
-        <div class="htitle">Пробуждённая · день 12</div>
+        <div class="htitle" id="htitle">Пробуждённая · день 12</div>
         <div class="level-row"><span class="lv">LEVEL</span><span class="num" id="lvl">7</span></div>
         <div class="expbar"><div class="expfill" id="exp"></div></div>
         <div class="exptext"><span id="expnum">620</span> / <span id="expneed">1000</span> EXP</div>
@@ -575,19 +578,9 @@
       </div>
     </div>
     <div class="window">
-      <div class="sec-title">Замеры сантиметром <span style="color:var(--muted);font-size:11px">17.02.2026</span></div>
-      <div class="mtab"><span class="mtn">Шея</span><span class="mtv">34 см</span><span class="mtd dn">▼ 1</span></div>
-      <div class="mtab"><span class="mtn">Грудь</span><span class="mtv">88 см</span><span class="mtd dn">▼ 2</span></div>
-      <div class="mtab"><span class="mtn">Талия</span><span class="mtv">68 см</span><span class="mtd dn">▼ 3</span></div>
-      <div class="mtab"><span class="mtn">Живот</span><span class="mtv">74 см</span><span class="mtd dn">▼ 2</span></div>
-      <div class="mtab"><span class="mtn">Бёдра</span><span class="mtv">96 см</span><span class="mtd dn">▼ 1</span></div>
-      <div class="mtab"><span class="mtn">Бедро</span><span class="mtv">56 см</span><span class="mtd">—</span></div>
-      <div class="mtab"><span class="mtn">Бицепс</span><span class="mtv">28 см</span><span class="mtd up">▲ 0.5</span></div>
-      <div class="mtab"><span class="mtn">Бицепс в напряжении</span><span class="mtv">30 см</span><span class="mtd up">▲ 0.5</span></div>
-      <div class="mtab"><span class="mtn">Предплечье</span><span class="mtv">24 см</span><span class="mtd">—</span></div>
-      <div class="mtab"><span class="mtn">Икра</span><span class="mtv">36 см</span><span class="mtd">—</span></div>
-      <div class="mtab"><span class="mtn">Запястье</span><span class="mtv">15 см</span><span class="mtd">—</span></div>
-      <button class="wadd" style="margin-top:14px" onclick="toast('✍ Новые замеры — раз в 1-2 недели')">＋ Записать новые замеры</button>
+      <div class="sec-title">Замеры сантиметром <span style="color:var(--muted);font-size:11px" id="measDate">нет данных</span></div>
+      <div id="measList"></div>
+      <button class="wadd" style="margin-top:14px" onclick="openMeasForm()">＋ Записать новые замеры</button>
       <div class="rnote" style="margin-top:8px">Система напомнит сделать замеры раз в 1-2 недели</div>
     </div>
   </div>
@@ -747,6 +740,16 @@
     <input id="bm-visceral" type="number" step="1" placeholder="5" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:14px">
     <button class="enter" onclick="saveBodyMetrics()">✓ Сохранить</button>
     <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('metricsmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
+<!-- ======= ЗАМЕРЫ САНТИМЕТРОМ ======= -->
+<div class="modal" id="measmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="pn" style="text-align:center">📏 Замеры сантиметром</div>
+    <div class="pr" style="text-align:center;margin-bottom:12px">Все поля — по желанию, см</div>
+    <div id="meas-fields"></div>
+    <button class="enter" onclick="saveMeasurements()">✓ Сохранить</button>
+    <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('measmodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
 <!-- ======= АНАЛИЗ ТЕЛА ПО ФОТО ======= -->
@@ -949,7 +952,19 @@
     document.getElementById('expnum').textContent=exp;
     document.getElementById('expneed').textContent=need;
     document.getElementById('lvl').textContent=lvl;
-    document.getElementById('rankBadge').textContent=rankFor(lvl);
+    document.getElementById('rankTag').textContent='РАНГ '+rankFor(lvl);
+    if(!(player&&player.avatarUrl))document.getElementById('rankBadge').textContent=rankFor(lvl);
+    renderHTitle();
+  }
+  function daysSinceJoin(){
+    if(!player||!player.joinedAt)return 1;
+    const a=new Date(player.joinedAt+'T00:00:00'),b=new Date(today()+'T00:00:00');
+    return Math.max(1,Math.round((b-a)/86400000)+1);
+  }
+  function renderHTitle(){
+    const el=document.getElementById('htitle');if(!el)return;
+    const m=player&&player.sex==='Мужской';
+    el.textContent=(m?'Пробуждённый':'Пробуждённая')+' · день '+daysSinceJoin();
   }
   function toggle(el,xp){
     const c=el.querySelector('.qrc');
@@ -1162,9 +1177,10 @@
   }
   function applyAvatar(){
     const url=player&&player.avatarUrl;
-    const el=document.getElementById('profAva');if(!el)return;
-    if(url)el.innerHTML='<img src="'+url+'" alt="avatar">';
-    else el.textContent=(player&&player.name||'Игрок')[0].toUpperCase();
+    const el=document.getElementById('profAva');
+    if(el){if(url)el.innerHTML='<img src="'+url+'" alt="avatar">';else el.textContent=(player&&player.name||'Игрок')[0].toUpperCase();}
+    const rb=document.getElementById('rankBadge');
+    if(rb){if(url)rb.innerHTML='<img src="'+url+'" alt="avatar">';else rb.textContent=rankFor(lvl);}
   }
   let bodyPhotos={front:null,side:null,back:null};
   function onBodyPhotoSelected(angle,ev,isOnboarding){
@@ -1268,7 +1284,7 @@
     wGoal=Math.round(w*30/50)*50;
     const sex=document.getElementById('o-sex').value;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
-      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal};
+      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:today()};
     if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // сразу показать своё фото, пока ИИ рисует аниме-версию
     DB.set('player',player);
     // новый игрок начинает с нуля
@@ -1291,11 +1307,13 @@
   }
   function applyPlayer(){
     if(!player)return;
+    if(!player.joinedAt){player.joinedAt=today();DB.set('player',player);}
     wGoal=player.wGoal||1900;
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
     applySilhouette();
     applyAvatar();
+    renderHTitle();
     normCal=calcNormCal(player);
     normMacros=calcNormMacros(normCal,player);
     renderWater();render();renderNutrition();
@@ -1337,6 +1355,7 @@
     const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
     const mcd=DB.get('macros',null);if(mcd&&mcd.date===today())macros={p:mcd.p||0,f:mcd.f||0,c:mcd.c||0};
     loadWeightLog();
+    loadMeasurements();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
@@ -1494,6 +1513,42 @@
     if(bm.weight)logWeightEntry(bm.weight,bm.fat);
     renderBodyMetrics(bm);
     document.getElementById('metricsmodal').classList.remove('show');toast('✓ Состав тела сохранён');
+  }
+
+  // ===== ЗАМЕРЫ САНТИМЕТРОМ =====
+  const MEAS_FIELDS=[['neck','Шея'],['chest','Грудь'],['waist','Талия'],['belly','Живот'],['hips','Бёдра'],['thigh','Бедро'],['biceps','Бицепс'],['bicepsFlex','Бицепс в напряжении'],['forearm','Предплечье'],['calf','Икра'],['wrist','Запястье']];
+  let measurements=[];
+  function loadMeasurements(){measurements=DB.get('measurements',[]);renderMeasurements();}
+  function openMeasForm(){
+    const last=measurements.length?measurements[measurements.length-1]:{};
+    document.getElementById('meas-fields').innerHTML=MEAS_FIELDS.map(([k,label])=>
+      '<label style="font-family:\'Exo 2\';font-size:11px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 4px">'+label+', см</label>'+
+      '<input id="meas-'+k+'" type="number" step="0.1" value="'+(last[k]||'')+'" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:\'Rajdhani\';font-size:15px;margin-bottom:10px">'
+    ).join('');
+    document.getElementById('measmodal').classList.add('show');
+  }
+  function saveMeasurements(){
+    const g=k=>parseFloat(document.getElementById('meas-'+k).value)||undefined;
+    const entry={date:today()};MEAS_FIELDS.forEach(([k])=>{const v=g(k);if(v!==undefined)entry[k]=v;});
+    const idx=measurements.findIndex(m=>m.date===today());
+    if(idx>=0)measurements[idx]=entry;else measurements.push(entry);
+    measurements.sort((a,b)=>a.date.localeCompare(b.date));
+    DB.set('measurements',measurements);
+    renderMeasurements();
+    document.getElementById('measmodal').classList.remove('show');toast('✓ Замеры сохранены');
+  }
+  function renderMeasurements(){
+    const dEl=document.getElementById('measDate');
+    if(!measurements.length){dEl.textContent='нет данных';document.getElementById('measList').innerHTML=MEAS_FIELDS.map(([k,label])=>'<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">— см</span><span class="mtd">—</span></div>').join('');return;}
+    const last=measurements[measurements.length-1],prev=measurements.length>=2?measurements[measurements.length-2]:null;
+    dEl.textContent=new Date(last.date+'T00:00:00').toLocaleDateString('ru-RU');
+    document.getElementById('measList').innerHTML=MEAS_FIELDS.map(([k,label])=>{
+      if(last[k]===undefined)return '<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">— см</span><span class="mtd">—</span></div>';
+      let d='<span class="mtd">—</span>';
+      if(prev&&prev[k]!==undefined){const diff=+(last[k]-prev[k]).toFixed(1);
+        if(diff>0)d='<span class="mtd up">▲ '+diff+'</span>';else if(diff<0)d='<span class="mtd dn">▼ '+Math.abs(diff)+'</span>';}
+      return '<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">'+last[k]+' см</span>'+d+'</div>';
+    }).join('');
   }
 
   // ===== ВЕС И ГРАФИК =====
