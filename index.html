@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-1';
+  var APP_VERSION='2026-06-23-2';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -997,7 +997,7 @@
   }
   async function resetProfile(){
     try{await cloudCall({action:'delete',uid:getUid()});}catch(e){}
-    ['player','progress','qlog','qsel','qcustom','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit'].forEach(k=>localStorage.removeItem('sl_'+k));
+    ['player','progress','qlog','qsel','qcustom','qtargets','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit','bodyPhoto'].forEach(k=>localStorage.removeItem('sl_'+k));
     Object.keys(localStorage).filter(k=>k.startsWith('sl_qr_')).forEach(k=>localStorage.removeItem(k));
     location.reload();
   }
@@ -1138,6 +1138,7 @@
       const bm={date:today(),weight:w,fat:res.fat,muscle:res.muscle,water:res.water,visceral:res.visceral};
       Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
       bodyMetrics=bm;DB.set('bodyMetrics',bm);
+      if(bodyPhotos.front){DB.set('bodyPhoto',bodyPhotos.front);applySilhouette();}
       renderBodyMetrics(bm);
       if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
         '<div class="rm"><span>Жир <b>'+(res.fat||'—')+'%</b></span><span>Мышцы <b>'+(res.muscle||'—')+'кг</b></span></div>'+
@@ -1172,7 +1173,7 @@
     if(diff>=0)b.innerHTML='<b>Дефицит '+diff+' ккал</b> · цель: дефицит ✓',b.classList.remove('over');
     else b.innerHTML='<b>Профицит '+(-diff)+' ккал</b> · превышение нормы',b.classList.add('over');
   }
-  function awaken(){
+  async function awaken(){
     const w=+document.getElementById('o-w').value||62;
     const name=document.getElementById('o-name').value||'Игрок';
     const dob=document.getElementById('o-dob').value;
@@ -1191,18 +1192,27 @@
     applyPlayer();
     document.getElementById('onb').classList.add('hide');
     toast('⚔ Добро пожаловать, '+name+'! Собери свой ежедневный квест');
+    if(bodyPhotos.front){
+      toast('⚡ Анализирую твои фото тела…');
+      await runBodyAnalysis();
+    }
     setTimeout(openQB,600); // сразу выбрать упражнения
-    if(bodyPhotos.front)runBodyAnalysis();
   }
   function applyPlayer(){
     if(!player)return;
     wGoal=player.wGoal||1900;
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
-    document.getElementById('silh').textContent=player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';
+    applySilhouette();
     normCal=calcNormCal(player);
     normMacros=calcNormMacros(normCal,player);
     renderWater();render();renderNutrition();
+  }
+  function applySilhouette(){
+    const el=document.getElementById('silh');if(!el)return;
+    const photo=DB.get('bodyPhoto',null);
+    if(photo)el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:12px">';
+    else el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';
   }
   function initDobSelects(){
     const dSel=document.getElementById('o-dob-d'),mSel=document.getElementById('o-dob-m'),ySel=document.getElementById('o-dob-y');
