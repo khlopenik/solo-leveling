@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-3';
+  var APP_VERSION='2026-06-22-4';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -374,7 +374,13 @@
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
-    <label>Дата рождения</label><input id="o-dob" type="date" onchange="updateKBJUPreview()">
+    <label>Дата рождения</label>
+    <div class="orow">
+      <div style="flex:0.8"><select id="o-dob-d" onchange="syncDob()"></select></div>
+      <div style="flex:1.4"><select id="o-dob-m" onchange="syncDob()"></select></div>
+      <div style="flex:1"><select id="o-dob-y" onchange="syncDob()"></select></div>
+    </div>
+    <input type="hidden" id="o-dob">
     <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select>
     <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
     <label>Цель</label><select id="o-goal" onchange="updateKBJUPreview()"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
@@ -1189,7 +1195,23 @@
     normMacros=calcNormMacros(normCal,player);
     renderWater();render();renderNutrition();
   }
+  function initDobSelects(){
+    const dSel=document.getElementById('o-dob-d'),mSel=document.getElementById('o-dob-m'),ySel=document.getElementById('o-dob-y');
+    if(!dSel||dSel.options.length)return;
+    dSel.innerHTML='<option value="">День</option>'+Array.from({length:31},(_,i)=>i+1).map(d=>'<option value="'+d+'">'+d+'</option>').join('');
+    const months=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+    mSel.innerHTML='<option value="">Месяц</option>'+months.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('');
+    const curY=new Date().getFullYear();
+    ySel.innerHTML='<option value="">Год</option>'+Array.from({length:90},(_,i)=>curY-10-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  }
+  function syncDob(){
+    const d=document.getElementById('o-dob-d').value,m=document.getElementById('o-dob-m').value,y=document.getElementById('o-dob-y').value;
+    const hidden=document.getElementById('o-dob');
+    hidden.value=(d&&m&&y)?(y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')):'';
+    updateKBJUPreview();
+  }
   function init(){
+    initDobSelects();
     // прогресс
     const pr=DB.get('progress',null);
     if(pr){exp=pr.exp;lvl=pr.lvl;need=pr.need;streak=pr.streak||0;streakBest=pr.streakBest||0;streakDate=pr.streakDate||null;}
