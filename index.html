@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-9';
+  var APP_VERSION='2026-06-23-1';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1471,6 +1471,12 @@
   let qCustom=[];
   let qTargets={};
   function openQB(){renderQB();document.getElementById('qbmodal').classList.add('show');}
+  function scaledTarget(t,curLvl){
+    if(!/^\d+$/.test(t))return t;
+    const b=parseInt(t)||1;
+    const factor=Math.min(3,1+((curLvl||1)-1)*0.05);
+    return String(Math.max(b,Math.round(b*factor)));
+  }
   function renderQB(){
     let h='';
     for(const cat in qLib){
@@ -1479,7 +1485,9 @@
         const key=cat+'|'+n, on=qSel.has(key);
         const cur=qTargets[key]!=null?qTargets[key]:t;
         const isNum=/^\d+$/.test(t);
-        const tgtHtml=isNum?'<input type="number" min="1" value="'+cur+'" onclick="event.stopPropagation()" onchange="setQTarget(\''+key+'\',this.value)" style="width:54px;padding:4px 6px;margin-left:6px;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;color:var(--cyan);font-family:\'Rajdhani\';font-size:13px;text-align:center">'
+        const eff=isNum?scaledTarget(cur,lvl):null;
+        const hint=(isNum&&lvl>1)?' <span style="color:var(--muted);font-size:11px">(сейчас: '+eff+')</span>':'';
+        const tgtHtml=isNum?'<span style="color:var(--muted);font-size:11px">старт:</span> <input type="number" min="1" value="'+cur+'" onclick="event.stopPropagation()" onchange="setQTarget(\''+key+'\',this.value)" style="width:54px;padding:4px 6px;margin-left:4px;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;color:var(--cyan);font-family:\'Rajdhani\';font-size:13px;text-align:center">'+hint
           :(t?' <span style="color:var(--muted);font-size:12px">· '+t+'</span>':'');
         h+='<div class="priv-row"><span class="pl">'+n+tgtHtml+' <span style="color:var(--gold);font-size:11px">+'+xp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
       });
@@ -1505,7 +1513,7 @@
   }
   function renderQuest(){
     let items=[];
-    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,qTargets[key]!=null?qTargets[key]:t,sphereOf[cat]]);});
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,scaledTarget(qTargets[key]!=null?qTargets[key]:t,lvl),sphereOf[cat]]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
     const g=document.getElementById('qgoals');
     if(!items.length){
@@ -1590,7 +1598,7 @@
     const key='sl_qr_'+today();
     if(localStorage.getItem(key))return;
     let items=[];
-    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,qTargets[key]!=null?qTargets[key]:t]);});
+    for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,scaledTarget(qTargets[key]!=null?qTargets[key]:t,lvl)]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t]));
     if(!items.length)return;
     document.getElementById('qr-goals').innerHTML=items.map(([n,xp,t])=>{
