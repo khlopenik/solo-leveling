@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-4';
+  var APP_VERSION='2026-06-22-5';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -374,12 +374,9 @@
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
-    <label>Дата рождения</label>
-    <div class="orow">
-      <div style="flex:0.8"><select id="o-dob-d" onchange="syncDob()"></select></div>
-      <div style="flex:1.4"><select id="o-dob-m" onchange="syncDob()"></select></div>
-      <div style="flex:1"><select id="o-dob-y" onchange="syncDob()"></select></div>
-    </div>
+    <label>Дата рождения — день</label><select id="o-dob-d" onchange="syncDob()"></select>
+    <label>Дата рождения — месяц</label><select id="o-dob-m" onchange="syncDob()"></select>
+    <label>Дата рождения — год</label><select id="o-dob-y" onchange="syncDob()"></select>
     <input type="hidden" id="o-dob">
     <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select>
     <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
