@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-2';
+  var APP_VERSION='2026-06-22-3';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -374,7 +374,8 @@
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
-    <div class="orow"><div><label>Дата рождения</label><input id="o-dob" type="date" onchange="updateKBJUPreview()"></div><div><label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select></div></div>
+    <label>Дата рождения</label><input id="o-dob" type="date" onchange="updateKBJUPreview()">
+    <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select>
     <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
     <label>Цель</label><select id="o-goal" onchange="updateKBJUPreview()"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
     <label>Уровень активности</label><select id="o-act" onchange="updateKBJUPreview()"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
@@ -394,9 +395,9 @@
       <div class="oph" id="o-bp-tile-side" onclick="document.getElementById('o-bp-side').click()">＋<small>сбоку</small></div>
       <div class="oph" id="o-bp-tile-back" onclick="document.getElementById('o-bp-back').click()">＋<small>сзади</small></div>
     </div>
-    <input type="file" accept="image/*" capture="environment" id="o-bp-front" style="display:none" onchange="onBodyPhotoSelected('front',event,true)">
-    <input type="file" accept="image/*" capture="environment" id="o-bp-side" style="display:none" onchange="onBodyPhotoSelected('side',event,true)">
-    <input type="file" accept="image/*" capture="environment" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
+    <input type="file" accept="image/*" id="o-bp-front" style="display:none" onchange="onBodyPhotoSelected('front',event,true)">
+    <input type="file" accept="image/*" id="o-bp-side" style="display:none" onchange="onBodyPhotoSelected('side',event,true)">
+    <input type="file" accept="image/*" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
     <p style="color:var(--muted);font-size:11px;margin-top:6px">3 фото в облегающей одежде → AI оценит % жира и состав тела. Можно пропустить — тогда будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
     <button class="enter" onclick="awaken()">⚔ ПРОБУДИТЬСЯ</button>
     <p style="text-align:center;color:var(--muted);font-size:11px;margin-top:10px">Каждую неделю Система уточнит данные и пересчитает план</p>
@@ -505,7 +506,7 @@
     </div>
     <div class="window">
       <div class="sec-title">Добавить приём пищи</div>
-      <input type="file" accept="image/*" capture="environment" id="food-photo-input" style="display:none" onchange="onFoodPhotoSelected(event)">
+      <input type="file" accept="image/*" id="food-photo-input" style="display:none" onchange="onFoodPhotoSelected(event)">
       <div class="photobox" id="food-photobox" onclick="document.getElementById('food-photo-input').click()"><span style="font-size:34px">📷</span><div style="color:var(--muted);font-size:13px;margin-top:6px">Сфоткай еду или этикетку</div></div>
       <textarea id="fd-desc" class="fdesc" placeholder="Что съел? Примерно, на глаз. Напр.: «сырок глазированный, 1 шт» или «кофе с молоком 250 мл, молока ~40 мл»"></textarea>
       <button class="wadd" onclick="analyze()">⚡ Проанализировать</button>
@@ -740,9 +741,9 @@
       <div class="oph" id="bp-tile-side" onclick="document.getElementById('bp-input-side').click()">＋<small>сбоку</small></div>
       <div class="oph" id="bp-tile-back" onclick="document.getElementById('bp-input-back').click()">＋<small>сзади</small></div>
     </div>
-    <input type="file" accept="image/*" capture="environment" id="bp-input-front" style="display:none" onchange="onBodyPhotoSelected('front',event)">
-    <input type="file" accept="image/*" capture="environment" id="bp-input-side" style="display:none" onchange="onBodyPhotoSelected('side',event)">
-    <input type="file" accept="image/*" capture="environment" id="bp-input-back" style="display:none" onchange="onBodyPhotoSelected('back',event)">
+    <input type="file" accept="image/*" id="bp-input-front" style="display:none" onchange="onBodyPhotoSelected('front',event)">
+    <input type="file" accept="image/*" id="bp-input-side" style="display:none" onchange="onBodyPhotoSelected('side',event)">
+    <input type="file" accept="image/*" id="bp-input-back" style="display:none" onchange="onBodyPhotoSelected('back',event)">
     <div id="bp-result" style="margin-top:12px"></div>
     <button class="enter" style="margin-top:14px" onclick="analyzeBodyPhotos()">⚡ Проанализировать</button>
     <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('bodyphotomodal').classList.remove('show')">закрыть</div>
