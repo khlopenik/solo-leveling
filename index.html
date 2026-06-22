@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-15';
+  var APP_VERSION='2026-06-23-16';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -660,6 +660,7 @@
   <div class="pcard" style="text-align:left">
     <div class="pn" style="text-align:center">⚙ Настройки</div>
     <div class="pr" style="text-align:center;margin-bottom:14px">Игрок и приложение</div>
+    <div class="priv-row"><span class="pl">✏️ Имя игрока</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');renamePlayer()">Изменить</button></div>
     <div class="priv-row"><span class="pl">🎴 Аватар (аниме)</span><button class="poke" onclick="document.getElementById('avatar-reupload').click()">Загрузить</button></div>
     <input type="file" accept="image/*" id="avatar-reupload" style="display:none" onchange="onAvatarReupload(event)">
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
@@ -1119,7 +1120,21 @@
   }
   function secsUntilMidnight(){const n=new Date();const mn=new Date(n);mn.setHours(24,0,0,0);return Math.floor((mn-n)/1000);}
   let secs=secsUntilMidnight();
-  setInterval(()=>{secs=Math.max(0,secs-1);const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');const el=document.getElementById('timer');if(el)el.textContent='⏱ осталось '+h+':'+m+':'+s;},1000);
+  function newDayRollover(){
+    // полночь наступила, пока приложение было открыто — пересчитываем день без перезапуска
+    if(streakDate&&streakDate!==today()&&streakDate!==yesterday()){streak=0;streakDate=null;saveProgress();}
+    const wd=DB.get('water',null);wNow=(wd&&wd.date===today())?wd.ml:0;
+    const ed=DB.get('eaten',null);eaten=(ed&&ed.date===today())?ed.kc:0;
+    const mcd=DB.get('macros',null);macros=(mcd&&mcd.date===today())?{p:mcd.p||0,f:mcd.f||0,c:mcd.c||0}:{p:0,f:0,c:0};
+    renderWater();renderQuest();renderStreak();renderDays();renderNutrition();
+    toast('⟢ Новый день начался — квест обновлён');
+  }
+  setInterval(()=>{
+    secs=Math.max(0,secs-1);
+    const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');
+    const el=document.getElementById('timer');if(el)el.textContent='⏱ осталось '+h+':'+m+':'+s;
+    if(secs===0){newDayRollover();secs=secsUntilMidnight();}
+  },1000);
   let eaten=0, normCal=1800, goalType='deficit';
   let macros={p:0,f:0,c:0}, normMacros={p:90,f:60,c:120};
   let weightLog=[], bodyMetrics=null;
@@ -1190,6 +1205,16 @@
       toast('✓ Аватар в стиле Solo Leveling готов');
     }catch(e){toast('Не удалось сделать аватар, попробуй другое фото');}
     avatarPhoto=null;
+  }
+  function renamePlayer(){
+    if(!player)return;
+    const name=prompt('Имя игрока', player.name||'');
+    if(!name||!name.trim())return;
+    player.name=name.trim();
+    DB.set('player',player);
+    applyPlayer();
+    cloudPush();
+    toast('✓ Имя обновлено: '+player.name);
   }
   function onAvatarReupload(ev){
     const file=ev.target.files&&ev.target.files[0];if(!file)return;
