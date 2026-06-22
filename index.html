@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-5';
+  var APP_VERSION='2026-06-23-6';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -377,8 +377,9 @@
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
     <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
     <label>Аватар <span style="color:var(--muted);font-weight:400">— по желанию, сделаем в стиле аниме</span></label>
-    <div class="ophotos" style="justify-content:flex-start">
-      <div class="oph" id="o-ava-tile" onclick="document.getElementById('o-avatar').click()">＋<small>фото</small></div>
+    <div id="o-ava-tile" onclick="document.getElementById('o-avatar').click()" style="display:flex;align-items:center;gap:12px;border:1px dashed var(--line);border-radius:10px;padding:12px;cursor:pointer;background:rgba(0,0,0,.2);margin-bottom:16px">
+      <div id="o-ava-preview" style="width:48px;height:48px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--cyan);background:rgba(43,107,255,.16);overflow:hidden">📷</div>
+      <span style="font-size:14px;color:var(--cyan)" id="o-ava-label">Загрузить фото для аватара</span>
     </div>
     <input type="file" accept="image/*" id="o-avatar" style="display:none" onchange="onAvatarPhotoSelected(event,true)">
     <label>Дата рождения — день</label><select id="o-dob-d" onchange="syncDob()"></select>
@@ -864,10 +865,10 @@
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem('sl_'+k,JSON.stringify(v))}};
-  const today=()=>new Date().toISOString().slice(0,10);
+  const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
   let player=DB.get('player',null);
   function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});cloudPush();}
-  function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);}
+  function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function checkStreak(){
     // если все цели квеста выполнены сегодня и день ещё не зачтён — серия +1
     const rows=document.querySelectorAll('#qgoals .qrow');
@@ -1128,8 +1129,10 @@
     const reader=new FileReader();
     reader.onload=()=>{
       avatarPhoto=reader.result.split(',')[1];
-      const tile=document.getElementById('o-ava-tile');
-      if(tile)tile.innerHTML='<img src="'+reader.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
+      const prev=document.getElementById('o-ava-preview');
+      if(prev)prev.innerHTML='<img src="'+reader.result+'" style="width:100%;height:100%;object-fit:cover">';
+      const lbl=document.getElementById('o-ava-label');
+      if(lbl)lbl.textContent='✓ Фото выбрано — нажми «Пробудиться»';
     };
     reader.readAsDataURL(file);
   }
@@ -1192,6 +1195,7 @@
       Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
       bodyMetrics=bm;DB.set('bodyMetrics',bm);
       if(bodyPhotos.front){DB.set('bodyPhoto',bodyPhotos.front);applySilhouette();}
+      if(bm.weight)logWeightEntry(bm.weight,bm.fat);
       renderBodyMetrics(bm);
       if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
         '<div class="rm"><span>Жир <b>'+(res.fat||'—')+'%</b></span><span>Мышцы <b>'+(res.muscle||'—')+'кг</b></span></div>'+
@@ -1222,7 +1226,7 @@
         fields.forEach(f=>{if(res[f]!=null){bm[f]=res[f];found.push(f);}});
         bm.date=today();
         bodyMetrics=bm;DB.set('bodyMetrics',bm);
-        if(bm.weight){const entry={date:today(),kg:bm.weight};if(bm.fat)entry.fat=bm.fat;const idx=weightLog.findIndex(w=>w.date===today());if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);DB.set('weightLog',weightLog);updateWeightTile();drawChart();}
+        if(bm.weight)logWeightEntry(bm.weight,bm.fat);
         renderBodyMetrics(bm);
         toast(found.length?'✓ Считано: '+found.length+' показателей':'Не нашёл цифр на скрине');
       }catch(e){
@@ -1265,23 +1269,25 @@
     const sex=document.getElementById('o-sex').value;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
       goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal};
+    if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // сразу показать своё фото, пока ИИ рисует аниме-версию
     DB.set('player',player);
     // новый игрок начинает с нуля
     exp=0;lvl=1;need=1000;saveProgress();
     stats={strength:0,agility:0,health:0,intellect:0};saveStats();renderStats();
     DB.set('progress',{exp,lvl,need,streak:0,streakBest:0,streakDate:null});streak=0;
+    logWeightEntry(w); // вес сразу виден в Системе и Прогрессе, не дожидаясь анализа фото
     applyPlayer();
     document.getElementById('onb').classList.add('hide');
     toast('⚔ Добро пожаловать, '+name+'! Собери свой ежедневный квест');
+    openQB(); // квест-билдер открывается сразу, без ожидания фото
     if(avatarPhoto){
       toast('⚡ Рисую твой аватар в стиле Solo Leveling…');
-      await generateAvatar();
+      generateAvatar(); // в фоне — не блокирует интерфейс
     }
     if(bodyPhotos.front){
       toast('⚡ Анализирую твои фото тела…');
-      await runBodyAnalysis();
+      runBodyAnalysis(); // в фоне — не блокирует интерфейс
     }
-    setTimeout(openQB,600); // сразу выбрать упражнения
   }
   function applyPlayer(){
     if(!player)return;
@@ -1485,12 +1491,21 @@
     const bm={date:today(),weight:g('bm-weight'),fat:g('bm-fat'),muscle:g('bm-muscle'),water:g('bm-water'),visceral:g('bm-visceral')};
     Object.keys(bm).forEach(k=>{if(bm[k]===undefined)delete bm[k];});
     bodyMetrics=bm;DB.set('bodyMetrics',bm);
-    if(bm.weight){const entry={date:today(),kg:bm.weight};if(bm.fat)entry.fat=bm.fat;const idx=weightLog.findIndex(w=>w.date===today());if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);DB.set('weightLog',weightLog);updateWeightTile();drawChart();}
+    if(bm.weight)logWeightEntry(bm.weight,bm.fat);
     renderBodyMetrics(bm);
     document.getElementById('metricsmodal').classList.remove('show');toast('✓ Состав тела сохранён');
   }
 
   // ===== ВЕС И ГРАФИК =====
+  function logWeightEntry(kg,fat){
+    if(!kg)return;
+    const entry={date:today(),kg};if(fat)entry.fat=fat;
+    const idx=weightLog.findIndex(w=>w.date===today());
+    if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);
+    weightLog.sort((a,b)=>a.date.localeCompare(b.date));
+    DB.set('weightLog',weightLog);
+    updateWeightTile();drawChart();
+  }
   function loadWeightLog(){
     weightLog=DB.get('weightLog',[]);
     updateWeightTile();
@@ -1509,12 +1524,7 @@
     const kg=parseFloat(document.getElementById('wlog-kg').value);
     if(isNaN(kg)||kg<20||kg>300){toast('⚠ Введи реальный вес');return;}
     const fat=parseFloat(document.getElementById('wlog-fat').value)||undefined;
-    const entry={date:today(),kg};if(fat)entry.fat=fat;
-    const idx=weightLog.findIndex(w=>w.date===today());
-    if(idx>=0)weightLog[idx]=entry;else weightLog.push(entry);
-    weightLog.sort((a,b)=>a.date.localeCompare(b.date));
-    DB.set('weightLog',weightLog);
-    updateWeightTile();drawChart();
+    logWeightEntry(kg,fat);
     document.getElementById('weightmodal').classList.remove('show');
     toast('✓ Вес записан: '+kg+' кг');
   }
