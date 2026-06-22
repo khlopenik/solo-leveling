@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-3';
+  var APP_VERSION='2026-06-23-4';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -195,7 +195,8 @@
   .chart-x{display:flex;gap:6px;font-size:10px;color:var(--muted);font-family:"Exo 2"}
   .chart-x span{flex:1;text-align:center}
   .bodyfig{text-align:center;margin-bottom:14px}
-  .silh{font-size:90px;line-height:1;filter:drop-shadow(0 0 18px rgba(70,215,255,.4))}
+  .silh{font-size:90px;line-height:1;filter:drop-shadow(0 0 18px rgba(70,215,255,.4));display:flex;align-items:center;justify-content:center}
+  .silh.has-photo{width:180px;height:240px;margin:0 auto;border-radius:16px;border:1px solid var(--line-strong);background:rgba(43,107,255,.08);overflow:hidden;box-shadow:0 0 24px rgba(70,215,255,.25);filter:none}
   .bphoto{margin-top:8px;padding:10px 16px;border:1px solid var(--line-strong);border-radius:10px;background:rgba(43,107,255,.16);color:var(--cyan-soft);font-family:"Rajdhani";font-weight:600;font-size:13px;cursor:pointer}
   .comp{display:flex;flex-direction:column}
   .crow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid rgba(70,215,255,.1)}
@@ -1241,8 +1242,8 @@
   function applySilhouette(){
     const el=document.getElementById('silh');if(!el)return;
     const photo=DB.get('bodyPhoto',null);
-    if(photo)el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:12px">';
-    else el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';
+    if(photo){el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
+    else{el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';el.classList.remove('has-photo');}
   }
   function initDobSelects(){
     const dSel=document.getElementById('o-dob-d'),mSel=document.getElementById('o-dob-m'),ySel=document.getElementById('o-dob-y');
