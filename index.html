@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-22-6';
+  var APP_VERSION='2026-06-22-7';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -384,6 +384,7 @@
     <label>Уровень активности</label><select id="o-act" onchange="updateKBJUPreview()"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
     <div class="kbju-prev" id="kbjuprev">
       <div style="font-family:'Exo 2';font-size:11px;color:var(--cyan);letter-spacing:3px;text-align:center">⟢ ТВОЯ НОРМА ⟢</div>
+      <div id="kp-maint" style="text-align:center;color:var(--muted);font-size:12px;margin:4px 0 8px"></div>
       <div class="kbju-grid">
         <div class="kbju-item"><div class="kbju-val" id="kp-kcal">—</div><div class="kbju-lbl">ККАЛ</div></div>
         <div class="kbju-item"><div class="kbju-val" id="kp-p">—</div><div class="kbju-lbl">БЕЛКИ, г</div></div>
@@ -475,6 +476,7 @@
         <svg width="150" height="150"><circle cx="75" cy="75" r="66" stroke="rgba(70,215,255,.15)" stroke-width="10" fill="none"/><circle id="ringCircle" cx="75" cy="75" r="66" stroke="url(#g)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="414" stroke-dashoffset="414"/><defs><linearGradient id="g"><stop offset="0" stop-color="#2b6bff"/><stop offset="1" stop-color="#46d7ff"/></linearGradient></defs></svg>
         <div class="rc"><div class="n" id="ringKcal">0</div><div class="l">/ <span id="ringNorm">1800</span> ккал</div></div>
       </div>
+      <div id="nutriMaintNote" style="text-align:center;color:var(--muted);font-size:12px;margin:-4px 0 8px"></div>
       <div class="macros">
         <div class="macro"><div class="mv" id="mac-pv" style="color:var(--gold)">0<small style="color:var(--muted);font-size:11px">/90</small></div><div class="ml">БЕЛКИ</div><div class="mbar"><i id="mac-pb" style="width:0%;background:var(--gold)"></i></div></div>
         <div class="macro"><div class="mv" id="mac-fv" style="color:var(--ok)">0<small style="color:var(--muted);font-size:11px">/60</small></div><div class="ml">ЖИРЫ</div><div class="mbar"><i id="mac-fb" style="width:0%;background:var(--ok)"></i></div></div>
@@ -1282,10 +1284,13 @@
     if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
     return Math.round(sex==='Мужской'?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161);
   }
-  function calcNormCal(p){
+  function calcMaintCal(p){
     const bmr=calcBMR();if(!bmr)return 1800;
     const mult={'Новичок (мало двигаюсь)':1.2,'Средний (тренируюсь иногда)':1.375,'Высокий (активный спорт)':1.55}[p.activity]||1.2;
-    let cal=Math.round(bmr*mult);
+    return Math.round(bmr*mult);
+  }
+  function calcNormCal(p){
+    let cal=calcMaintCal(p);
     if(p.goal==='Похудеть')cal=Math.round(cal*0.85);
     else if(p.goal==='Набрать массу')cal=Math.round(cal*1.1);
     return cal;
@@ -1305,6 +1310,13 @@
     if(circle)circle.setAttribute('stroke-dashoffset',(414*(1-ratio)).toFixed(1));
     const rkEl=document.getElementById('ringKcal');if(rkEl)rkEl.textContent=eaten;
     const rnEl=document.getElementById('ringNorm');if(rnEl)rnEl.textContent=normCal;
+    const mnEl=document.getElementById('nutriMaintNote');
+    if(mnEl&&player){
+      const maint=calcMaintCal(player);
+      if(player.goal==='Похудеть')mnEl.textContent='поддержание веса: '+maint+' ккал · для похудения: '+normCal+' ккал';
+      else if(player.goal==='Набрать массу')mnEl.textContent='поддержание веса: '+maint+' ккал · для набора массы: '+normCal+' ккал';
+      else mnEl.textContent='норма для поддержания текущего веса';
+    }
     // тайл КАЛОРИИ на главном экране
     const kcVal=document.getElementById('sys-kc-val');if(kcVal)kcVal.textContent=eaten;
     const kcNorm=document.getElementById('sys-kc-norm');if(kcNorm)kcNorm.textContent=normCal;
@@ -1611,11 +1623,12 @@
     if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
     const bmr=sex==='Мужской'?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161;
     const mult={'Новичок (мало двигаюсь)':1.2,'Средний (тренируюсь иногда)':1.375,'Высокий (активный спорт)':1.55}[act]||1.2;
-    let cal=Math.round(bmr*mult);
-    let note='';
-    if(goal==='Похудеть'){cal=Math.round(cal*0.85);note='дефицит 15% · похудение';}
-    else if(goal==='Набрать массу'){cal=Math.round(cal*1.1);note='профицит 10% · набор массы';}
-    else note='поддержание веса';
+    const maintCal=Math.round(bmr*mult);
+    let cal=maintCal;
+    let note='',maintTxt='';
+    if(goal==='Похудеть'){cal=Math.round(maintCal*0.85);note='дефицит 15% для похудения';maintTxt='норма для поддержания веса: '+maintCal+' ккал → для похудения: '+cal+' ккал';}
+    else if(goal==='Набрать массу'){cal=Math.round(maintCal*1.1);note='профицит 10% для набора массы';maintTxt='норма для поддержания веса: '+maintCal+' ккал → для набора массы: '+cal+' ккал';}
+    else{note='поддержание веса';maintTxt='это твоя норма для поддержания текущего веса';}
     const protG=Math.round(w*(goal==='Набрать массу'?2.0:1.6));
     const fatG=Math.round(w*0.9);
     const carbG=Math.max(50,Math.round((cal-protG*4-fatG*9)/4));
@@ -1624,6 +1637,7 @@
     document.getElementById('kp-f').textContent=fatG;
     document.getElementById('kp-c').textContent=carbG;
     document.getElementById('kp-note').textContent=note;
+    document.getElementById('kp-maint').textContent=maintTxt;
     prev.classList.add('show');
   }
 
