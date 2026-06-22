@@ -290,7 +290,7 @@
   .onb-inner{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line-strong);border-radius:16px;padding:22px 18px;box-shadow:0 0 30px rgba(43,107,255,.3)}
   .onb label{display:block;font-family:"Exo 2";font-size:11px;letter-spacing:1px;color:var(--cyan);margin:12px 0 5px}
   .onb input,.onb select{width:100%;padding:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:"Rajdhani";font-size:15px}
-  .onb .orow{display:flex;gap:12px} .onb .orow>div{flex:1}
+  .onb .orow{display:flex;gap:12px} .onb .orow>div{flex:1;min-width:0}
   .enter{width:100%;margin-top:20px;padding:14px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#04101f;font-family:"Exo 2";font-weight:700;font-size:15px;letter-spacing:1px;cursor:pointer;box-shadow:0 0 20px rgba(43,107,255,.5)}
   .ophotos{display:flex;gap:10px}
   .oph{flex:1;aspect-ratio:3/4;border:1px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--cyan);font-size:22px;cursor:pointer;background:rgba(0,0,0,.2)}
@@ -373,11 +373,14 @@
     </div>
     <label>Анализ тела по фото <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— по желанию</span></label>
     <div class="ophotos">
-      <div class="oph" onclick="toast('📷 Фото спереди')">＋<small>спереди</small></div>
-      <div class="oph" onclick="toast('📷 Фото сбоку')">＋<small>сбоку</small></div>
-      <div class="oph" onclick="toast('📷 Фото сзади')">＋<small>сзади</small></div>
+      <div class="oph" id="o-bp-tile-front" onclick="document.getElementById('o-bp-front').click()">＋<small>спереди</small></div>
+      <div class="oph" id="o-bp-tile-side" onclick="document.getElementById('o-bp-side').click()">＋<small>сбоку</small></div>
+      <div class="oph" id="o-bp-tile-back" onclick="document.getElementById('o-bp-back').click()">＋<small>сзади</small></div>
     </div>
-    <p style="color:var(--muted);font-size:11px;margin-top:6px">3-4 фото в облегающей одежде → AI оценит % жира и состав тела. Можно пропустить — тогда будет базовая фигурка.</p>
+    <input type="file" accept="image/*" capture="environment" id="o-bp-front" style="display:none" onchange="onBodyPhotoSelected('front',event,true)">
+    <input type="file" accept="image/*" capture="environment" id="o-bp-side" style="display:none" onchange="onBodyPhotoSelected('side',event,true)">
+    <input type="file" accept="image/*" capture="environment" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
+    <p style="color:var(--muted);font-size:11px;margin-top:6px">3 фото в облегающей одежде → AI оценит % жира и состав тела. Можно пропустить — тогда будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
     <button class="enter" onclick="awaken()">⚔ ПРОБУДИТЬСЯ</button>
     <p style="text-align:center;color:var(--muted);font-size:11px;margin-top:10px">Каждую неделю Система уточнит данные и пересчитает план</p>
   </div>
@@ -507,12 +510,11 @@
       <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px" id="bmDate">нет данных</span></div>
       <div class="bodyfig">
         <div class="silh" id="silh">🧍</div>
-        <button class="bphoto" onclick="toast('📷 Загрузи 3-4 фото — AI оценит состав тела')">📷 Анализ по фото тела</button>
+        <button class="bphoto" onclick="openBodyPhotoModal()">📷 Анализ по фото тела</button>
       </div>
       <div class="improw">
-        <button class="imp" onclick="toast('📷 Загрузить скрин из приложения весов')">📷 Скрин с весов</button>
         <button class="imp" onclick="openMetricsForm()">✍ Вручную</button>
-        <button class="imp" onclick="toast('🧍 По фото тела (AI)')">🧍 По фото</button>
+        <button class="imp" onclick="openBodyPhotoModal()">🧍 По фото</button>
       </div>
       <div class="comp" id="compGrid"></div>
       <div class="rnote" style="margin-top:10px">Оценки приблизительные (скрин с весов / фото / ручной ввод). Не медицинская точность.</div>
@@ -709,6 +711,24 @@
     <input id="bm-visceral" type="number" step="1" placeholder="5" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;margin-bottom:14px">
     <button class="enter" onclick="saveBodyMetrics()">✓ Сохранить</button>
     <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('metricsmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
+<!-- ======= АНАЛИЗ ТЕЛА ПО ФОТО ======= -->
+<div class="modal" id="bodyphotomodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="pn" style="text-align:center">🧍 Анализ тела по фото</div>
+    <div class="pr" style="text-align:center;margin-bottom:12px">Фото в облегающей одежде, спереди обязательно</div>
+    <div class="ophotos" id="bp-tiles">
+      <div class="oph" id="bp-tile-front" onclick="document.getElementById('bp-input-front').click()">＋<small>спереди</small></div>
+      <div class="oph" id="bp-tile-side" onclick="document.getElementById('bp-input-side').click()">＋<small>сбоку</small></div>
+      <div class="oph" id="bp-tile-back" onclick="document.getElementById('bp-input-back').click()">＋<small>сзади</small></div>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="bp-input-front" style="display:none" onchange="onBodyPhotoSelected('front',event)">
+    <input type="file" accept="image/*" capture="environment" id="bp-input-side" style="display:none" onchange="onBodyPhotoSelected('side',event)">
+    <input type="file" accept="image/*" capture="environment" id="bp-input-back" style="display:none" onchange="onBodyPhotoSelected('back',event)">
+    <div id="bp-result" style="margin-top:12px"></div>
+    <button class="enter" style="margin-top:14px" onclick="analyzeBodyPhotos()">⚡ Проанализировать</button>
+    <div class="pclose" style="text-align:center;margin-top:8px" onclick="document.getElementById('bodyphotomodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
 <!-- ======= ПРИВЫЧКА: НАСТРОЙКА ======= -->
@@ -1054,6 +1074,50 @@
       res.innerHTML='<div style="text-align:center;color:var(--danger);font-size:13px;padding:10px">Не удалось проанализировать. Попробуй ещё раз или опиши подробнее.</div>';
     }
   }
+
+  // ===== АНАЛИЗ ТЕЛА ПО ФОТО =====
+  const BODY_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-body';
+  let bodyPhotos={front:null,side:null,back:null};
+  function onBodyPhotoSelected(angle,ev,isOnboarding){
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      bodyPhotos[angle]=reader.result.split(',')[1];
+      const tile=document.getElementById((isOnboarding?'o-bp-tile-':'bp-tile-')+angle);
+      if(tile)tile.innerHTML='<img src="'+reader.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
+    };
+    reader.readAsDataURL(file);
+  }
+  function openBodyPhotoModal(){
+    document.getElementById('bodyphotomodal').classList.add('show');
+  }
+  async function runBodyAnalysis(targetResEl){
+    const photos=[bodyPhotos.front,bodyPhotos.side,bodyPhotos.back].filter(Boolean);
+    if(!photos.length){if(targetResEl)targetResEl.innerHTML='<div style="color:var(--danger);font-size:13px;text-align:center">Нужно хотя бы фото спереди</div>';return;}
+    if(targetResEl)targetResEl.innerHTML='<div style="text-align:center;color:var(--cyan);font-family:\'Exo 2\';padding:10px">⚡ Система анализирует фигуру…</div>';
+    const h=(player&&player.height)||+document.getElementById('o-h').value||168;
+    const w=(player&&player.weight)||+document.getElementById('o-w').value||62;
+    const sex=(player&&player.sex)||document.getElementById('o-sex').value||'Женский';
+    try{
+      const r=await fetch(BODY_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photos,height:h,weight:w,sex})});
+      const res=await r.json();
+      if(!r.ok||res.error)throw new Error(res.error||'ошибка анализа');
+      const bm={date:today(),weight:w,fat:res.fat,muscle:res.muscle,water:res.water,visceral:res.visceral};
+      Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
+      bodyMetrics=bm;DB.set('bodyMetrics',bm);
+      renderBodyMetrics(bm);
+      if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
+        '<div class="rm"><span>Жир <b>'+(res.fat||'—')+'%</b></span><span>Мышцы <b>'+(res.muscle||'—')+'кг</b></span></div>'+
+        '<div class="rnote">'+(res.note||'Оценка ИИ по фото, приблизительная.')+'</div></div>';
+      toast('✓ Состав тела обновлён');
+      bodyPhotos={front:null,side:null,back:null};
+    }catch(e){
+      if(targetResEl)targetResEl.innerHTML='<div style="color:var(--danger);font-size:13px;text-align:center">Не удалось проанализировать. Попробуй другие фото.</div>';
+      else toast('Не удалось проанализировать тело по фото');
+    }
+  }
+  function analyzeBodyPhotos(){runBodyAnalysis(document.getElementById('bp-result'));}
+
   function addMeal(){
     if(!lastRes)return;
     eaten+=lastRes.kc;
@@ -1095,6 +1159,7 @@
     document.getElementById('onb').classList.add('hide');
     toast('⚔ Добро пожаловать, '+name+'! Собери свой ежедневный квест');
     setTimeout(openQB,600); // сразу выбрать упражнения
+    if(bodyPhotos.front)runBodyAnalysis();
   }
   function applyPlayer(){
     if(!player)return;
