@@ -422,7 +422,7 @@
     <div class="window">
       <div class="sec-title">Показатели тела</div>
       <div class="tiles">
-        <div class="tile" onclick="go('nutri')"><div class="th">🔥 КАЛОРИИ</div><div class="big">1240<span style="font-size:13px;color:var(--muted)"> /1800</span></div><div class="sub">осталось 560 ккал</div><div class="barmini"><i style="width:69%"></i></div></div>
+        <div class="tile" onclick="go('nutri')"><div class="th">🔥 КАЛОРИИ</div><div class="big"><span id="sys-kc-val">0</span><span style="font-size:13px;color:var(--muted)"> /<span id="sys-kc-norm">1800</span></span></div><div class="sub" id="sys-kc-sub" style="color:var(--muted)">осталось 1800 ккал</div><div class="barmini"><i id="sys-kc-fill" style="width:0%"></i></div></div>
         <div class="tile" onclick="go('prog')"><div class="th">⚖ ВЕС</div><div class="big"><span id="sys-wt-val">—</span><span style="font-size:13px;color:var(--muted)"> кг</span></div><div class="sub" id="sys-wt-sub" style="color:var(--muted)">не записан</div><div class="barmini"><i id="sys-wt-fill" style="width:0%"></i></div></div>
       </div>
       <!-- тайл привычки -->
@@ -500,19 +500,10 @@
       <div class="streak">🔥 12 ДНЕЙ ПОДРЯД</div>
       <div class="daycells" id="daycells"></div>
       <div class="sec-title" style="margin-top:18px">Достижения</div>
-      <div class="ach">
-        <div class="badge">🥉<small>Ранг E</small></div>
-        <div class="badge">🔥<small>7 дней</small></div>
-        <div class="badge">💪<small>100 отжим.</small></div>
-        <div class="badge">⚖<small>−2 кг</small></div>
-        <div class="badge lock">🥈<small>Ранг D</small></div>
-        <div class="badge lock">🏆<small>30 дней</small></div>
-        <div class="badge lock">⚡<small>LVL 20</small></div>
-        <div class="badge lock">👑<small>Ранг S</small></div>
-      </div>
+      <div class="ach" id="progAch"></div>
     </div>
     <div class="window">
-      <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px">16 мая</span></div>
+      <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px" id="bmDate">нет данных</span></div>
       <div class="bodyfig">
         <div class="silh" id="silh">🧍</div>
         <button class="bphoto" onclick="toast('📷 Загрузи 3-4 фото — AI оценит состав тела')">📷 Анализ по фото тела</button>
@@ -588,39 +579,25 @@
         <div class="addf" style="margin-top:8px" onclick="openFullLeaderboard()">🏆 Весь топ — все игроки</div>
       </div>
       <div id="g-feed" style="display:none">
-        <div class="feed" onclick="prof('Кирилл','Ранг B · LVL 24')"><div class="fav">К</div><div class="ft"><b>Кирилл</b> поднялся до <span class="hl">ранга B</span> ⚔<small>15 минут назад</small></div><div class="fire">🔥</div></div>
-        <div class="feed" onclick="prof('Марина','Ранг C · LVL 19')"><div class="fav">М</div><div class="ft"><b>Марина</b> закрыла серию <span class="hl">30 дней подряд</span><small>2 часа назад</small></div><div class="fire">🏆</div></div>
-        <div class="feed" onclick="prof('Дима','Ранг C · LVL 17')"><div class="fav">Д</div><div class="ft"><b>Дима</b> сбросил <span class="hl">−5 кг</span> за месяц<small>сегодня</small></div><div class="fire">⚖</div></div>
-        <div class="feed" onclick="prof('Аня','Ранг E · LVL 6')"><div class="fav">А</div><div class="ft"><b>Аня</b> выполнила дневной квест <span class="hl">100%</span><small>сегодня</small></div><div class="fire">✅</div></div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:28px 16px;line-height:1.6">Пока тут пусто.<br>Выполни квест или закрой серию дней — и тут появятся события 🔥</div>
       </div>
       <div id="g-clan" style="display:none">
-        <div class="clanhdr"><div class="ava" style="background:rgba(155,107,255,.22);font-size:20px">⚔</div><div class="un">Клан «Тени»<small>8 участников · 92.4k XP · 3 место среди кланов</small></div></div>
-        <div class="rankrow"><div class="pos">1</div><div class="ava">К</div><div class="un">Кирилл<small>лидер</small></div><div class="xp">18.4k</div></div>
-        <div class="rankrow"><div class="pos">2</div><div class="ava">Д</div><div class="un">Дима</div><div class="xp">12.8k</div></div>
-        <div class="rankrow me"><div class="pos">5</div><div class="ava">Л</div><div class="un">Ты</div><div class="xp">8.6k</div></div>
-        <div class="addf" onclick="toast('🔗 Пригласить в клан')">＋ Пригласить в клан</div>
-        <div class="addf" onclick="toast('⚔ Создать свой клан')">⚔ Создать свой клан</div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px 8px;line-height:1.6">У тебя пока нет клана</div>
+        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет создать или найти клан')">⚔ Создать свой клан</div>
       </div>
       <div id="g-pati" style="display:none">
         <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Бади 1-на-1: следите друг за другом, напоминаете о тренировке</div>
-        <div class="rankrow"><div class="ava">А</div><div class="un">Аня<small style="color:var(--ok)">✓ квест выполнен · 🔥 6 дней</small></div><button class="poke" onclick="toast('👍 Лайк отправлен Ане')">👍</button></div>
-        <div class="rankrow"><div class="ava">С</div><div class="un">Саша<small style="color:var(--danger)">✗ ещё не заходил сегодня</small></div><button class="poke pulse" onclick="toast('⚡ Пинок отправлен Саше!')">⚡ Пнуть</button></div>
-        <div class="addf" onclick="toast('🔗 Найти/позвать бади')">＋ Найти бади</div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:16px;line-height:1.6">Нет бади — найди партнёра, чтобы тренироваться вместе</div>
+        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет найти бади')">＋ Найти бади</div>
       </div>
       <div id="g-friends" style="display:none">
-        <div class="rankrow" onclick="prof('Кирилл','Ранг B · LVL 24')"><div class="ava">К</div><div class="un">Кирилл<small>в сети · Ранг B</small></div><button class="poke" onclick="event.stopPropagation();openChat('Кирилл')">💬</button></div>
-        <div class="rankrow" onclick="prof('Марина','Ранг C · LVL 19')"><div class="ava">М</div><div class="un">Марина<small>была 2 ч назад · Ранг C</small></div><button class="poke" onclick="event.stopPropagation();openChat('Марина')">💬</button></div>
-        <div class="rankrow" onclick="prof('Аня','Ранг E · LVL 6')"><div class="ava">А</div><div class="un">Аня<small>в сети · Ранг E</small></div><button class="poke" onclick="event.stopPropagation();openChat('Аня')">💬</button></div>
-        <div class="rankrow" onclick="prof('Саша','Ранг E · LVL 5')"><div class="ava">С</div><div class="un">Саша<small>вчера · Ранг E</small></div><button class="poke" onclick="event.stopPropagation();openChat('Саша')">💬</button></div>
-        <div class="addf" onclick="toast('🔗 Ссылка-приглашение скопирована')">＋ Добавить друга</div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Пока нет друзей.<br>Добавь первого — познакомьтесь и тренируйтесь вместе!</div>
+        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет добавить друга')">＋ Добавить друга</div>
       </div>
       <div id="g-chat" style="display:none">
         <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Личные переписки и группы</div>
-        <div class="chatrow" onclick="openChat('Кирилл')"><div class="ava">К</div><div class="cm"><b>Кирилл</b><small>Погнали на рейд вечером?</small></div><span class="ct">14:20</span></div>
-        <div class="chatrow" onclick="openChat('Аня')"><div class="ava">А</div><div class="cm"><b>Аня</b><small>Я уже квест закрыла 💪</small></div><span class="ct">12:05</span></div>
-        <div class="chatrow" onclick="openChat('Клан «Тени»')"><div class="ava" style="background:rgba(155,107,255,.2)">⚔</div><div class="cm"><b>Клан «Тени»</b><small>Дима: кто сегодня на 100%?</small></div><span class="ct">09:40</span></div>
-        <div class="chatrow" onclick="openChat('Пати с Саней')"><div class="ava" style="background:rgba(92,255,157,.16)">🤝</div><div class="cm"><b>Пати с Саней</b><small>не забудь про тренировку!</small></div><span class="ct">вчера</span></div>
-        <div class="addf" onclick="toast('＋ Новый чат или группа')">＋ Новый чат или группа</div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Нет переписок — начни с того, что добавишь друга</div>
+        <div class="addf" onclick="toast('＋ Скоро здесь можно будет создать чат или группу')">＋ Новый чат или группа</div>
       </div>
     </div>
   </div>
@@ -826,7 +803,7 @@
 
 <script>
   try{if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}}catch(e){}
-  let exp=620,lvl=7,need=1000,streak=0,streakBest=0,streakDate=null;
+  let exp=0,lvl=1,need=1000,streak=0,streakBest=0,streakDate=null;
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
@@ -966,7 +943,8 @@
   function openSettings(){document.getElementById('setmodal').classList.add('show');}
   function resetProfile(){
     if(!confirm('Сбросить профиль и весь прогресс на этом устройстве?'))return;
-    ['player','progress','qlog','qsel','qcustom','water','meals','eaten'].forEach(k=>localStorage.removeItem('sl_'+k));
+    ['player','progress','qlog','qsel','qcustom','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit'].forEach(k=>localStorage.removeItem('sl_'+k));
+    Object.keys(localStorage).filter(k=>k.startsWith('sl_qr_')).forEach(k=>localStorage.removeItem(k));
     location.reload();
   }
   function levelUpFx(n){
@@ -1030,7 +1008,8 @@
     document.getElementById('wgoal').textContent=wGoal;
     document.getElementById('wtrackf').style.width=Math.min(100,wNow/wGoal*100)+'%';
   }
-  let secs=6*3600+14*60+22;
+  function secsUntilMidnight(){const n=new Date();const mn=new Date(n);mn.setHours(24,0,0,0);return Math.floor((mn-n)/1000);}
+  let secs=secsUntilMidnight();
   setInterval(()=>{secs=Math.max(0,secs-1);const h=String(Math.floor(secs/3600)).padStart(2,'0'),m=String(Math.floor(secs%3600/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');const el=document.getElementById('timer');if(el)el.textContent='⏱ осталось '+h+':'+m+':'+s;},1000);
   let eaten=0, normCal=1800, goalType='deficit';
   let macros={p:0,f:0,c:0}, normMacros={p:90,f:60,c:120};
@@ -1127,7 +1106,7 @@
     loadWeightLog();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
-    render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();
+    render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
     cloudInit();
   }
   function bootHide(){const b=document.getElementById('boot');if(b)b.classList.add('hide');}
@@ -1199,6 +1178,16 @@
     if(circle)circle.setAttribute('stroke-dashoffset',(414*(1-ratio)).toFixed(1));
     const rkEl=document.getElementById('ringKcal');if(rkEl)rkEl.textContent=eaten;
     const rnEl=document.getElementById('ringNorm');if(rnEl)rnEl.textContent=normCal;
+    // тайл КАЛОРИИ на главном экране
+    const kcVal=document.getElementById('sys-kc-val');if(kcVal)kcVal.textContent=eaten;
+    const kcNorm=document.getElementById('sys-kc-norm');if(kcNorm)kcNorm.textContent=normCal;
+    const kcSub=document.getElementById('sys-kc-sub');
+    if(kcSub){
+      const left=normCal-eaten;
+      kcSub.textContent=left>=0?'осталось '+left+' ккал':'превышение на '+Math.abs(left)+' ккал';
+      kcSub.style.color=left<0?'var(--danger)':'var(--muted)';
+    }
+    const kcFill=document.getElementById('sys-kc-fill');if(kcFill)kcFill.style.width=Math.min(100,ratio*100)+'%';
     function updMac(valId,barId,val,norm,defCol){
       const el=document.getElementById(valId);if(!el)return;
       const v=Math.round(val),pct=norm>0?Math.min(110,v/norm*100):0;
@@ -1237,6 +1226,11 @@
     ];
     comp.innerHTML=rows.map(([em,n,v,st])=>'<div class="crow"><span class="cn">'+em+' '+n+'</span><span class="cv">'+v+'</span>'+st+'</div>').join('');
     if(bm&&bm.weight)player&&(player.weight=bm.weight);
+    const dEl=document.getElementById('bmDate');
+    if(dEl){
+      if(bm&&bm.date){const dt=new Date(bm.date);dEl.textContent=dt.toLocaleDateString('ru',{day:'numeric',month:'long'});}
+      else dEl.textContent='нет данных';
+    }
   }
   function openMetricsForm(){
     const bm=DB.get('bodyMetrics',{})||{};
@@ -1390,21 +1384,10 @@
     }
     el.innerHTML=h;
   }
-  // ===== ПРОФИЛЬ (полный экран) =====
-  function openProfScreen(){
-    const name=player&&player.name||'ИГРОК';
-    document.getElementById('profAva').textContent=name[0].toUpperCase();
-    document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
-    document.getElementById('profSub').textContent='Ранг '+rankFor(lvl)+' · Уровень '+lvl;
-    document.getElementById('profLvl').textContent=lvl;
-    document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
-    document.getElementById('profExpNum').textContent=exp;
-    document.getElementById('profExpNeed').textContent=need;
-    ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
-    document.getElementById('profStreak').textContent='🔥 '+streak+(streak===1?' ДЕНЬ':streak>=2&&streak<=4?' ДНЯ':' ДНЕЙ')+' ПОДРЯД';
-    document.getElementById('profRecTxt').textContent='рекорд: '+streakBest;
+  // ===== ДОСТИЖЕНИЯ (общий список, используется в Профиле и Прогрессе) =====
+  function getAchDefs(){
     const habitDays=habit?Math.max(0,Math.floor((Date.now()-new Date(habit.startDate))/86400000)):0;
-    const achDefs=[
+    return [
       // Старт
       {em:'🥉',n:'Ранг E',un:true},
       {em:'🌱',n:'Первый шаг',un:lvl>=2},
@@ -1430,7 +1413,26 @@
       {em:'💜',n:'30 без привычки',un:habitDays>=30},
       {em:'🌟',n:'100 без привычки',un:habitDays>=100},
     ];
-    document.getElementById('profAch').innerHTML=achDefs.map(a=>'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>').join('');
+  }
+  function renderAch(elId){
+    const el=document.getElementById(elId);if(!el)return;
+    el.innerHTML=getAchDefs().map(a=>'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>').join('');
+  }
+
+  // ===== ПРОФИЛЬ (полный экран) =====
+  function openProfScreen(){
+    const name=player&&player.name||'ИГРОК';
+    document.getElementById('profAva').textContent=name[0].toUpperCase();
+    document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
+    document.getElementById('profSub').textContent='Ранг '+rankFor(lvl)+' · Уровень '+lvl;
+    document.getElementById('profLvl').textContent=lvl;
+    document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
+    document.getElementById('profExpNum').textContent=exp;
+    document.getElementById('profExpNeed').textContent=need;
+    ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
+    document.getElementById('profStreak').textContent='🔥 '+streak+(streak===1?' ДЕНЬ':streak>=2&&streak<=4?' ДНЯ':' ДНЕЙ')+' ПОДРЯД';
+    document.getElementById('profRecTxt').textContent='рекорд: '+streakBest;
+    renderAch('profAch');
     document.getElementById('profscreen').classList.add('show');
   }
   function closeProfScreen(){document.getElementById('profscreen').classList.remove('show');}
