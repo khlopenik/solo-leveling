@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-19';
+  var APP_VERSION='2026-06-23-20';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -242,7 +242,7 @@
   .seg{display:flex;gap:8px;margin-bottom:14px}
   .seg button{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--muted);padding:9px;border-radius:9px;font-family:"Exo 2";font-size:11px;letter-spacing:1px;cursor:pointer;transition:.2s}
   .seg button.on{color:#fff;border-color:var(--line-strong);background:rgba(43,107,255,.2);box-shadow:0 0 12px rgba(43,107,255,.3)}
-  .rankrow{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid rgba(70,215,255,.12)}
+  .rankrow{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid rgba(70,215,255,.12);cursor:pointer}
   .rankrow .pos{width:26px;font-family:"Exo 2";font-weight:900;text-align:center;color:var(--muted)}
   .rankrow.me{background:rgba(43,107,255,.12);border-radius:10px;border-bottom:none}
   .rankrow.me .pos{color:var(--gold)}
@@ -688,6 +688,13 @@
     <button class="enter" style="margin-top:12px" onclick="saveQuest()">✓ Сохранить квест</button>
   </div>
 </div>
+<!-- ======= ПРОФИЛЬ ИГРОКА (из рейтинга) ======= -->
+<div class="modal" id="playerprofmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:center">
+    <div id="pp-body"><div style="color:var(--muted);padding:20px">Загрузка…</div></div>
+    <div class="pclose" style="margin-top:10px" onclick="document.getElementById('playerprofmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
 <div class="modal" id="privmodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard" style="text-align:left">
     <div class="pn" style="text-align:center;margin-bottom:4px">🔒 Приватность</div>
@@ -964,7 +971,8 @@
     myRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');
     let h=top.slice(0,10).map((p,i)=>{
       const me=(p.name===myName)?' me':'';const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
-      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
+      const click=p.device_id?' onclick="openPlayerProfile(\''+p.device_id+'\')"':'';
+      return '<div class="rankrow '+cls+me+'"'+click+'><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?' <small style=\"color:var(--gold)\">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+'</div></div>';
     }).join('');
     if(myPos>=10){const p=top[myPos];h+='<div style="text-align:center;color:var(--muted);font-size:18px;margin:4px 0">⋯</div><div class="rankrow me"><div class="pos">'+(myPos+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(myName||'?')[0])+'</div><div class="un">Ты <small style="color:var(--gold)">(ты)</small></div><div class="xp">'+(p.exp||0)+'</div></div>';}
     box.innerHTML=h;
@@ -1025,6 +1033,7 @@
     btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
     gtabs.forEach(k=>document.getElementById('g-'+k).style.display=k===which?'block':'none');
+    if(which==='friends')loadFriendsTab();
   }
   function tab2(which){
     const btns=document.querySelectorAll('.seg button');
@@ -1939,6 +1948,68 @@
   }
   function closeQR(){document.getElementById('qroverlay').classList.remove('show');}
 
+  // ===== ПРОФИЛЬ ИГРОКА ИЗ РЕЙТИНГА + ЗАЯВКИ В ДРУЗЬЯ =====
+  async function openPlayerProfile(targetUid){
+    document.getElementById('pp-body').innerHTML='<div style="color:var(--muted);padding:20px">Загрузка…</div>';
+    document.getElementById('playerprofmodal').classList.add('show');
+    const res=await cloudCall({action:'player_profile',uid:getUid(),target_uid:targetUid});
+    const box=document.getElementById('pp-body');
+    if(!res||res.error||!res.player){box.innerHTML='<div style="color:var(--danger);padding:20px">Не удалось загрузить профиль</div>';return;}
+    const p=res.player;
+    const ava=p.avatar_url?'<img src="'+p.avatar_url+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':(p.name||'?')[0].toUpperCase();
+    let actionsHtml='';
+    if(targetUid===getUid())actionsHtml='<div style="color:var(--muted);font-size:13px;margin-top:10px">Это ты 👋</div>';
+    else if(res.friendStatus==='friends')actionsHtml='<div style="color:var(--ok);font-size:13px;margin-top:10px">✓ Вы друзья</div>';
+    else if(res.friendStatus==='pending_sent')actionsHtml='<div style="color:var(--muted);font-size:13px;margin-top:10px">Заявка отправлена, ждём ответа</div>';
+    else if(res.friendStatus==='pending_received')actionsHtml='<button class="enter" style="margin-top:10px" onclick="respondFriendFromProfile(\''+targetUid+'\',true)">✓ Принять заявку в друзья</button>';
+    else actionsHtml='<button class="enter" style="margin-top:10px" onclick="sendFriendRequest(\''+targetUid+'\')">＋ Добавить в друзья</button>';
+    box.innerHTML='<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;background:rgba(43,107,255,.16);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--cyan);overflow:hidden">'+ava+'</div>'+
+      '<div class="pn">'+(p.name||'Игрок')+'</div>'+
+      '<div class="pr">Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+' · '+(p.exp||0)+' EXP</div>'+
+      '<div class="pr" style="color:var(--muted);font-size:12px">🔥 серия: '+(p.streak||0)+' дней (рекорд '+(p.streak_best||0)+')</div>'+
+      actionsHtml+
+      (targetUid===getUid()?'':'<button class="poke" style="width:100%;margin-top:10px" onclick="toast(\'💬 Личные сообщения — скоро\')">✉ Написать</button>');
+  }
+  async function sendFriendRequest(targetUid){
+    const res=await cloudCall({action:'friend_request',uid:getUid(),target_uid:targetUid});
+    if(res&&res.ok){toast('✓ Заявка в друзья отправлена');openPlayerProfile(targetUid);}
+    else toast('Не удалось отправить заявку');
+  }
+  async function respondFriendFromProfile(targetUid,accept){
+    const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
+    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');openPlayerProfile(targetUid);}
+  }
+  async function loadFriendsTab(){
+    const box=document.getElementById('g-friends');if(!box)return;
+    box.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>';
+    const [reqRes,listRes]=await Promise.all([
+      cloudCall({action:'friend_requests_incoming',uid:getUid()}),
+      cloudCall({action:'friend_list',uid:getUid()}),
+    ]);
+    const reqs=(reqRes&&reqRes.requests)||[];
+    const friends=(listRes&&listRes.friends)||[];
+    let h='';
+    if(reqs.length){
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--gold);margin-bottom:8px">ЗАЯВКИ В ДРУЗЬЯ</div>';
+      h+=reqs.map(r=>{const p=r.player;if(!p)return'';
+        return '<div class="rankrow" style="cursor:default"><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small></div>'+
+          '<button class="poke" onclick="respondFriendTab(\''+r.requester_uid+'\',true)">✓</button>'+
+          '<button class="poke" style="margin-left:6px;border-color:var(--danger);color:#ffb3c2" onclick="respondFriendTab(\''+r.requester_uid+'\',false)">✕</button></div>';
+      }).join('');
+    }
+    if(friends.length){
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--cyan);margin:14px 0 8px">МОИ ДРУЗЬЯ ('+friends.length+')</div>';
+      h+=friends.map(p=>'<div class="rankrow" onclick="openPlayerProfile(\''+p.device_id+'\')"><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small></div><div class="xp">'+(p.exp||0)+'</div></div>').join('');
+    }
+    if(!h)h='<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Пока нет друзей.<br>Открой профиль игрока в рейтинге и отправь заявку!</div>';
+    h+='<div class="addf" style="margin-top:10px" onclick="go(\'guild\');document.querySelector(\'.seg button\').click()">＋ Найти в рейтинге</div>';
+    box.innerHTML=h;
+  }
+  async function respondFriendTab(targetUid,accept){
+    const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
+    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');loadFriendsTab();}
+  }
+
   // ===== ВЕСЬ ТОП =====
   async function openFullLeaderboard(){
     document.getElementById('lbscreen').classList.add('show');
@@ -1953,7 +2024,8 @@
     box.innerHTML=top.map((p,i)=>{
       const me=(p.name===myName)?' me':'';
       const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
-      return '<div class="rankrow '+cls+me+'"><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+' XP</div></div>';
+      const click=p.device_id?' onclick="openPlayerProfile(\''+p.device_id+'\')"':'';
+      return '<div class="rankrow '+cls+me+'"'+click+'><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+(p.exp||0)+' XP</div></div>';
     }).join('');
   }
 
