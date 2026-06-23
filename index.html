@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-37';
+  var APP_VERSION='2026-06-23-38';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -236,24 +236,37 @@
   .badge.lock{opacity:.35;filter:grayscale(1)}
   .badge.imgbadge{padding:0}
   .badge.imgbadge img{width:100%;height:100%;object-fit:cover}
-  .ach-group-title{font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan);margin:16px 0 6px;text-transform:uppercase}
+  .ach-group-title{display:flex;align-items:center;gap:10px;font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan-soft);margin:20px 0 10px;text-transform:uppercase}
   .ach-group-title:first-child{margin-top:0}
+  .ach-group-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(70,215,255,.35),transparent)}
+  .ach-gt-count{flex:none;font-size:10px;color:var(--gold);letter-spacing:1px;background:rgba(255,214,107,.12);padding:2px 8px;border-radius:10px}
   .ach-preview{max-height:118px;overflow:hidden;position:relative}
   .ach-preview .ach-group-title{display:none}
-  .ach-full{max-height:72vh;overflow-y:auto;padding-right:2px}
-  .ach-big{grid-template-columns:repeat(3,1fr)!important;gap:14px!important}
-  .badge3d{aspect-ratio:1;cursor:pointer;perspective:700px}
-  .badge3d-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+  .ach-full{max-height:74vh;overflow-y:auto;padding-right:4px}
+  .achcard{width:94%;max-width:440px}
+  .ach-summary{margin:6px 0 4px;text-align:center}
+  .ach-summary .ach-sum-num{font-family:"Exo 2";font-weight:900;font-size:26px;color:var(--gold);text-shadow:0 0 16px rgba(255,214,107,.5)}
+  .ach-summary .ach-sum-lbl{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+  .ach-sum-bar{height:7px;border-radius:6px;background:rgba(255,255,255,.08);margin:8px auto 0;max-width:240px;overflow:hidden}
+  .ach-sum-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--gold),var(--cyan));box-shadow:0 0 12px rgba(255,214,107,.5);transition:width .6s}
+  .ach-big{grid-template-columns:repeat(3,1fr)!important;gap:12px!important}
+  .badge3d{aspect-ratio:1;cursor:pointer;perspective:800px}
+  .badge3d-inner{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d}
   .badge3d.flipped .badge3d-inner{transform:rotateY(180deg)}
-  .badge3d-front,.badge3d-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
-  .badge3d-front{background:rgba(0,0,0,.25);font-size:34px}
-  .badge3d-front.lock{opacity:.35;filter:grayscale(1)}
+  .badge3d-front,.badge3d-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .badge3d-front{font-size:34px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 35%,rgba(43,107,255,.18),rgba(0,0,0,.35))}
+  .badge3d-front.un{border:1px solid rgba(255,214,107,.55);background:radial-gradient(circle at 50% 32%,rgba(255,214,107,.28),rgba(43,16,60,.5));box-shadow:0 0 18px rgba(255,214,107,.35),inset 0 0 16px rgba(255,214,107,.14)}
+  .badge3d-front.lock{filter:grayscale(1) brightness(.55);opacity:.7}
   .badge3d-front img{width:100%;height:100%;object-fit:cover}
-  .badge3d-back{background:rgba(43,107,255,.18);transform:rotateY(180deg);padding:8px;text-align:center;flex-direction:column;gap:4px}
-  .badge3d-back.un{background:rgba(92,255,157,.16)}
-  .b3-name{font-family:"Exo 2";font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.5px}
-  .b3-req{font-size:10px;color:var(--text);line-height:1.3}
-  .b3-reward{font-size:9px;color:var(--gold)}
+  .badge3d-front .b3-lockico{position:absolute;right:5px;bottom:4px;font-size:12px;opacity:.85}
+  .badge3d-front .b3-check{position:absolute;right:4px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}
+  .badge3d-back{transform:rotateY(180deg);padding:9px 7px;text-align:center;flex-direction:column;gap:5px;border:1px solid rgba(70,215,255,.3);background:linear-gradient(160deg,rgba(43,107,255,.22),rgba(10,10,20,.6))}
+  .badge3d-back.un{border-color:rgba(92,255,157,.45);background:linear-gradient(160deg,rgba(92,255,157,.18),rgba(10,20,14,.6))}
+  .b3-name{font-family:"Exo 2";font-size:10.5px;color:#fff;font-weight:700;letter-spacing:.5px;line-height:1.2}
+  .b3-req{font-size:9.5px;color:var(--cyan-soft);line-height:1.25}
+  .b3-reward{font-size:9px;color:var(--gold);line-height:1.2}
+  .b3-status{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .b3-status.un{color:var(--ok)}
   .streak{display:flex;align-items:center;justify-content:center;gap:8px;font-family:"Exo 2";font-weight:700;font-size:24px;color:var(--gold)}
   .daycells{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:14px}
   .dcell{aspect-ratio:1;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:rgba(0,0,0,.22)}
@@ -806,9 +819,9 @@
   </div>
 </div>
 <div class="modal" id="achmodal" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="pcard" style="text-align:left;max-height:88vh;overflow-y:auto">
-    <div class="pn" style="text-align:center">🏆 Все достижения</div>
-    <div class="pr" style="text-align:center;margin-bottom:10px;font-size:12px">Чёрно-белые — пока не получены, цветные — уже твои</div>
+  <div class="pcard achcard" style="text-align:left;max-height:90vh;overflow-y:auto">
+    <div class="pn" style="text-align:center">🏆 Зал достижений</div>
+    <div class="ach-summary" id="achSummary"></div>
     <div class="ach-full" id="achFull"></div>
     <div class="pclose" style="text-align:center;margin-top:10px" onclick="document.getElementById('achmodal').classList.remove('show')">закрыть</div>
   </div>
@@ -2214,9 +2227,18 @@
   function renderAch(elId,full){
     const el=document.getElementById(elId);if(!el)return;
     const groups=getAchGroups();
+    if(full){
+      // сводка сверху: сколько всего получено
+      let total=0,got=0;
+      groups.forEach(g=>g.items.forEach(a=>{total++;if(a.un)got++;}));
+      const sum=document.getElementById('achSummary');
+      if(sum)sum.innerHTML='<div class="ach-sum-num">'+got+' / '+total+'</div><div class="ach-sum-lbl">достижений получено</div><div class="ach-sum-bar"><div class="ach-sum-fill" style="width:'+(total?Math.round(got/total*100):0)+'%"></div></div>';
+    }
     el.innerHTML=groups.map(g=>{
       const items=full?[...g.items].sort((a,b)=>(b.un?1:0)-(a.un?1:0)):g.items;
-      return '<div class="ach-group-title">'+g.title+'</div><div class="ach'+(full?' ach-big':'')+'">'+
+      const got=g.items.filter(a=>a.un).length;
+      const head=full?'<div class="ach-group-title">'+g.title+'<span class="ach-gt-count">'+got+'/'+g.items.length+'</span></div>':'<div class="ach-group-title">'+g.title+'</div>';
+      return head+'<div class="ach'+(full?' ach-big':'')+'">'+
         items.map(a=>full?renderBadge3d(a):renderBadgeSimple(a)).join('')+'</div>';
     }).join('');
   }
@@ -2227,10 +2249,16 @@
   }
   function renderBadge3d(a){
     const front=a.img?'<img src="'+ACH_DIR+a.img+'.png" alt="">':a.em;
+    const mark=a.un?'<span class="b3-check">✨</span>':'<span class="b3-lockico">🔒</span>';
     return '<div class="badge3d" onclick="this.classList.toggle(\'flipped\')">'+
       '<div class="badge3d-inner">'+
-        '<div class="badge3d-front'+(a.un?'':' lock')+'">'+front+'</div>'+
-        '<div class="badge3d-back'+(a.un?' un':'')+'"><div class="b3-name">'+(a.n||'')+(a.un?' ✓':'')+'</div><div class="b3-req">'+(a.req||'')+'</div><div class="b3-reward">🎁 '+(a.reward||'')+'</div></div>'+
+        '<div class="badge3d-front'+(a.un?' un':' lock')+'">'+front+mark+'</div>'+
+        '<div class="badge3d-back'+(a.un?' un':'')+'">'+
+          '<div class="b3-name">'+(a.n||'')+'</div>'+
+          '<div class="b3-req">'+(a.req||'')+'</div>'+
+          '<div class="b3-reward">🎁 '+(a.reward||'')+'</div>'+
+          '<div class="b3-status'+(a.un?' un':'')+'">'+(a.un?'✓ Получено':'Не получено')+'</div>'+
+        '</div>'+
       '</div></div>';
   }
   function openAchModal(){renderAch('achFull',true);document.getElementById('achmodal').classList.add('show');}
