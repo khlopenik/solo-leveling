@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-24';
+  var APP_VERSION='2026-06-23-25';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -196,9 +196,14 @@
   .chart .bar{flex:1;background:linear-gradient(180deg,var(--cyan),var(--blue));border-radius:4px 4px 0 0;box-shadow:0 0 10px rgba(70,215,255,.4);min-height:6px;transition:height .5s}
   .chart-x{display:flex;gap:6px;font-size:10px;color:var(--muted);font-family:"Exo 2"}
   .chart-x span{flex:1;text-align:center}
-  .bodyfig{text-align:center;margin-bottom:14px}
+  .bodyfig{text-align:center;margin-bottom:14px;position:relative}
   .silh{font-size:90px;line-height:1;filter:drop-shadow(0 0 18px rgba(70,215,255,.4));display:flex;align-items:center;justify-content:center}
-  .silh.has-photo{width:180px;height:240px;margin:0 auto;border-radius:16px;border:1px solid var(--line-strong);background:rgba(43,107,255,.08);overflow:hidden;box-shadow:0 0 24px rgba(70,215,255,.25);filter:none}
+  .silh.has-photo{width:180px;height:240px;margin:0 auto;border-radius:16px;border:1px solid var(--violet);overflow:hidden;box-shadow:0 0 28px rgba(155,107,255,.45);filter:none}
+  .bbadges{position:absolute;top:0;left:50%;transform:translateX(-50%);width:180px;height:240px;pointer-events:none}
+  .bbadge{position:absolute;left:50%;transform:translateX(-50%);background:#fff;color:#0b0b0f;font-family:"Exo 2";font-weight:800;font-size:15px;padding:6px 16px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.3);white-space:nowrap}
+  .bbadge.status{font-size:12px;padding:5px 14px;color:#04101f;background:var(--ok)}
+  .bbadge.status.over{background:var(--danger);color:#fff}
+  .bbadge.status.low{background:var(--cyan-soft);color:#04101f}
   .bphoto{margin-top:8px;padding:10px 16px;border:1px solid var(--line-strong);border-radius:10px;background:rgba(43,107,255,.16);color:var(--cyan-soft);font-family:"Rajdhani";font-weight:600;font-size:13px;cursor:pointer}
   .comp{display:flex;flex-direction:column}
   .crow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid rgba(70,215,255,.1)}
@@ -546,6 +551,7 @@
       <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px" id="bmDate">нет данных</span></div>
       <div class="bodyfig">
         <div class="silh" id="silh">🧍</div>
+        <div class="bbadges" id="bbadges"></div>
         <button class="bphoto" onclick="openBodyPhotoModal()">📷 Анализ по фото тела</button>
       </div>
       <div class="improw">
@@ -1414,10 +1420,27 @@
   function applySilhouette(){
     const el=document.getElementById('silh');if(!el)return;
     const photo=DB.get('bodyPhoto',null);
-    const ava=player&&player.avatarUrl;
     if(photo){el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
-    else if(ava){el.innerHTML='<img src="'+ava+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
     else{el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';el.classList.remove('has-photo');}
+    renderBodyBadges();
+  }
+  function renderBodyBadges(){
+    const box=document.getElementById('bbadges');if(!box)return;
+    const silh=document.getElementById('silh');
+    const bm=bodyMetrics;
+    if(!silh||!silh.classList.contains('has-photo')||!bm){box.innerHTML='';return;}
+    let html='';
+    if(bm.weight)html+='<div class="bbadge" style="top:18%">'+bm.weight+' кг</div>';
+    if(bm.fat!=null){
+      html+='<div class="bbadge" style="top:46%">'+bm.fat+' %</div>';
+      const male=player&&player.sex==='Мужской';
+      const v=+bm.fat;
+      const lowMax=male?6:14, okMax=male?18:25;
+      const label=v<lowMax?'Очень мало':v<okMax?'Норма':'Выше нормы';
+      const cls=v<lowMax?'low':v<okMax?'ok':'over';
+      html+='<div class="bbadge status '+cls+'" style="top:66%">'+label+'</div>';
+    }
+    box.innerHTML=html;
   }
   function initDobSelects(){
     const dSel=document.getElementById('o-dob-d'),mSel=document.getElementById('o-dob-m'),ySel=document.getElementById('o-dob-y');
@@ -1591,6 +1614,7 @@
       if(bm&&bm.date){const dt=new Date(bm.date);dEl.textContent=dt.toLocaleDateString('ru',{day:'numeric',month:'long'});}
       else dEl.textContent='нет данных';
     }
+    renderBodyBadges();
   }
   function openMetricsForm(){
     const bm=DB.get('bodyMetrics',{})||{};
