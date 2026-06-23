@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-25';
+  var APP_VERSION='2026-06-23-26';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1297,7 +1297,8 @@
       const bm={date:today(),weight:w,fat:res.fat,muscle:res.muscle,water:res.water,visceral:res.visceral,boneMass:res.boneMass,protein:res.protein};
       Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
       bodyMetrics=bm;DB.set('bodyMetrics',bm);
-      if(bodyPhotos.front){DB.set('bodyPhoto',bodyPhotos.front);applySilhouette();}
+      const shownPhoto=bodyPhotos.front||bodyPhotos.side||bodyPhotos.back;
+      if(shownPhoto){DB.set('bodyPhoto',shownPhoto);applySilhouette();}
       if(bm.weight)logWeightEntry(bm.weight,bm.fat);
       renderBodyMetrics(bm);
       if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
@@ -1399,7 +1400,7 @@
       toast('⚡ Рисую твой аватар в стиле Solo Leveling…');
       generateAvatar(); // в фоне — не блокирует интерфейс
     }
-    if(bodyPhotos.front){
+    if(bodyPhotos.front||bodyPhotos.side||bodyPhotos.back){
       toast('⚡ Анализирую твои фото тела…');
       runBodyAnalysis(); // в фоне — не блокирует интерфейс
     }
