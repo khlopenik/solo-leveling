@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-17';
+  var APP_VERSION='2026-06-23-18';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -416,8 +416,14 @@
     <input type="file" accept="image/*" id="o-bp-front" style="display:none" onchange="onBodyPhotoSelected('front',event,true)">
     <input type="file" accept="image/*" id="o-bp-side" style="display:none" onchange="onBodyPhotoSelected('side',event,true)">
     <input type="file" accept="image/*" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
-    <p style="color:var(--muted);font-size:11px;margin-top:6px">3 фото в облегающей одежде → AI оценит % жира и состав тела. Можно пропустить — тогда будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
-    <button class="enter" onclick="awaken()">⚔ ПРОБУДИТЬСЯ</button>
+    <p style="color:var(--gold);font-size:11px;margin-top:6px;font-weight:700">⚠ НЕ ОБЯЗАТЕЛЬНО, ТОЛЬКО ПО ЖЕЛАНИЮ</p>
+    <p style="color:var(--muted);font-size:11px;margin-top:4px">Фото спереди/сбоку/сзади (мужчинам — в шортах/трусах, женщинам — в купальнике/белье) → AI оценит % жира и состав тела. Никто не обязан их присылать — если не хочешь, просто пропусти, будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
+    <p style="color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5">* Все оценки (вес, жир%, состав тела, калории) приблизительные, не медицинская точность и не врачебная рекомендация. Решения о тренировках, питании и здоровье — на твоей ответственности.</p>
+    <label class="onb-consent" style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer" onclick="this.querySelector('input').click()">
+      <input type="checkbox" id="o-consent" onchange="document.getElementById('o-awaken-btn').disabled=!this.checked" style="margin-top:3px;flex:none">
+      <span style="font-size:12px;color:var(--muted);line-height:1.4">Я понимаю, что это не медицинское приложение, показатели приблизительные, и согласен(на) стать Игроком на этих условиях</span>
+    </label>
+    <button class="enter" id="o-awaken-btn" onclick="awaken()" disabled>⚔ ПРОБУДИТЬСЯ</button>
     <p style="text-align:center;color:var(--muted);font-size:11px;margin-top:10px">Каждую неделю Система уточнит данные и пересчитает план</p>
   </div>
 </div>
@@ -465,21 +471,11 @@
         <div class="tile" onclick="go('nutri')"><div class="th">🔥 КАЛОРИИ</div><div class="big"><span id="sys-kc-val">0</span><span style="font-size:13px;color:var(--muted)"> /<span id="sys-kc-norm">1800</span></span></div><div class="sub" id="sys-kc-sub" style="color:var(--muted)">осталось 1800 ккал</div><div class="barmini"><i id="sys-kc-fill" style="width:0%"></i></div></div>
         <div class="tile" onclick="go('prog')"><div class="th">⚖ ВЕС</div><div class="big"><span id="sys-wt-val">—</span><span style="font-size:13px;color:var(--muted)"> кг</span></div><div class="sub" id="sys-wt-sub" style="color:var(--muted)">не записан</div><div class="barmini"><i id="sys-wt-fill" style="width:0%"></i></div></div>
       </div>
-      <!-- тайл привычки -->
-      <div class="steps-tile" id="habitTile" style="margin-top:8px">
-        <div class="steps-row">
-          <div class="steps-left">
-            <div class="steps-lbl" id="habitLbl" style="color:var(--violet)">🚫 ВРЕДНАЯ ПРИВЫЧКА</div>
-            <div class="steps-num" id="habitDays">—</div>
-            <div class="steps-sub" id="habitSub">не добавлена</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-            <button class="steps-btn" id="habitBtn" onclick="openHabitModal()" style="background:rgba(138,43,226,.15);border-color:rgba(138,43,226,.4);color:var(--violet)">Добавить</button>
-            <button class="habit-fail" id="habitFail" onclick="habitFailed()" style="display:none">↺ Сорвался</button>
-          </div>
-        </div>
-        <div class="barmini" id="habitBar" style="margin-top:10px;display:none"><i id="habitFill" style="width:0%;background:linear-gradient(90deg,var(--violet),var(--cyan))"></i></div>
-      </div>
+    </div>
+    <div class="window" id="habitsWindow">
+      <div class="sec-title">🚫 Вредные привычки / аскеза</div>
+      <div id="habitsList"></div>
+      <button class="steps-btn" onclick="openHabitModal()" style="margin-top:10px;width:100%;background:rgba(138,43,226,.15);border-color:rgba(138,43,226,.4);color:var(--violet)">+ Добавить привычку</button>
     </div>
   </div>
 
@@ -555,7 +551,7 @@
         <button class="imp" onclick="openBodyPhotoModal()">🧍 По фото</button>
         <button class="imp" onclick="document.getElementById('scale-screenshot-input').click()">📷 Скрин с весов</button>
       </div>
-      <input type="file" accept="image/*" id="scale-screenshot-input" style="display:none" onchange="onScaleScreenshotSelected(event)">
+      <input type="file" accept="image/*" id="scale-screenshot-input" multiple style="display:none" onchange="onScaleScreenshotSelected(event)">
       <div class="comp" id="compGrid"></div>
       <div class="rnote" style="margin-top:10px">Оценки приблизительные (скрин с весов / фото / ручной ввод). Не медицинская точность.</div>
     </div>
@@ -761,7 +757,8 @@
 <div class="modal" id="bodyphotomodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
     <div class="pn" style="text-align:center">🧍 Анализ тела по фото</div>
-    <div class="pr" style="text-align:center;margin-bottom:12px">Фото в облегающей одежде, спереди обязательно</div>
+    <div class="pr" style="text-align:center;margin-bottom:2px;color:var(--gold);font-weight:700">⚠ НЕ ОБЯЗАТЕЛЬНО, ТОЛЬКО ПО ЖЕЛАНИЮ</div>
+    <div class="pr" style="text-align:center;margin-bottom:12px;font-size:11px">Мужчинам — в шортах/трусах, женщинам — в купальнике/белье. Можно загрузить только одно фото или не загружать совсем.</div>
     <div class="ophotos" id="bp-tiles">
       <div class="oph" id="bp-tile-front" onclick="document.getElementById('bp-input-front').click()">＋<small>спереди</small></div>
       <div class="oph" id="bp-tile-side" onclick="document.getElementById('bp-input-side').click()">＋<small>сбоку</small></div>
@@ -796,6 +793,7 @@
       <input id="habit-date" type="date" style="width:100%;padding:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:15px;box-sizing:border-box;outline:none">
     </div>
     <button class="enter" onclick="saveHabit()">✓ Сохранить</button>
+    <div class="pclose" id="habit-delete" style="margin-top:10px;display:none;color:var(--danger)" onclick="deleteHabit()">удалить привычку</div>
     <div class="pclose" style="margin-top:10px" onclick="document.getElementById('habitmodal').classList.remove('show')">закрыть</div>
   </div>
 </div>
@@ -919,7 +917,7 @@
   }
   function cloudState(){
     return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats,
-      habitCloud:DB.get('habit',null)};
+      habitsCloud:DB.get('habits',null)};
   }
   let pushT;
   function cloudPush(){if(!player)return;clearTimeout(pushT);pushT=setTimeout(()=>{cloudCall({action:'push',uid:getUid(),name:player.name,state:cloudState()});},800);}
@@ -928,7 +926,7 @@
     exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
     stats=s.stats||{strength:0,agility:0,health:0,intellect:0};
     DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
-    if(s.habitCloud&&!DB.get('habit',null)){habit=s.habitCloud;DB.set('habit',habit);}
+    if(s.habitsCloud&&!DB.get('habits',null)){habits=s.habitsCloud;DB.set('habits',habits);}
     applyPlayer();document.getElementById('onb').classList.add('hide');
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
@@ -1054,7 +1052,7 @@
   }
   async function resetProfile(){
     try{await cloudCall({action:'delete',uid:getUid()});}catch(e){}
-    ['player','progress','qlog','qsel','qcustom','qtargets','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit','bodyPhoto'].forEach(k=>localStorage.removeItem('sl_'+k));
+    ['player','progress','qlog','qsel','qcustom','qtargets','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit','habits','bodyPhoto'].forEach(k=>localStorage.removeItem('sl_'+k));
     Object.keys(localStorage).filter(k=>k.startsWith('sl_qr_')).forEach(k=>localStorage.removeItem(k));
     location.reload();
   }
@@ -1182,12 +1180,28 @@
   // ===== АНАЛИЗ ТЕЛА ПО ФОТО =====
   const BODY_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-body';
   const AVATAR_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/generate-avatar';
-  let avatarPhoto=null;
+  let avatarPhoto=null,avatarThumb=null;
+  function compressImageDataUrl(dataUrl,maxDim,quality){
+    return new Promise(resolve=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>h){if(w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}}
+        else if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}
+        const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(cv.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=()=>resolve(dataUrl);
+      img.src=dataUrl;
+    });
+  }
   function onAvatarPhotoSelected(ev){
     const file=ev.target.files&&ev.target.files[0];if(!file)return;
     const reader=new FileReader();
-    reader.onload=()=>{
+    reader.onload=async()=>{
       avatarPhoto=reader.result.split(',')[1];
+      avatarThumb=await compressImageDataUrl(reader.result,256,0.7);
       const prev=document.getElementById('o-ava-preview');
       if(prev)prev.innerHTML='<img src="'+reader.result+'" style="width:100%;height:100%;object-fit:cover">';
       const lbl=document.getElementById('o-ava-label');
@@ -1202,9 +1216,9 @@
       const res=await r.json();
       if(!r.ok||res.error||!res.url)throw new Error(res.error||'ошибка генерации');
       player.avatarUrl=res.url;DB.set('player',player);
-      applyAvatar();cloudPush();
+      applyAvatar();applySilhouette();cloudPush();
       toast('✓ Аватар в стиле Solo Leveling готов');
-    }catch(e){toast('Не удалось сделать аватар, попробуй другое фото');}
+    }catch(e){toast('Не получилось перерисовать в аниме-стиле — оставила твою фотку');}
     avatarPhoto=null;
   }
   function renamePlayer(){
@@ -1222,6 +1236,8 @@
     const reader=new FileReader();
     reader.onload=async()=>{
       avatarPhoto=reader.result.split(',')[1];
+      const thumb=await compressImageDataUrl(reader.result,256,0.7);
+      if(player){player.avatarUrl=thumb;DB.set('player',player);applyAvatar();applySilhouette();cloudPush();}
       document.getElementById('setmodal').classList.remove('show');
       toast('⚡ Рисую твой аватар в стиле Solo Leveling…');
       await generateAvatar();
@@ -1252,7 +1268,7 @@
   }
   async function runBodyAnalysis(targetResEl){
     const photos=[bodyPhotos.front,bodyPhotos.side,bodyPhotos.back].filter(Boolean);
-    if(!photos.length){if(targetResEl)targetResEl.innerHTML='<div style="color:var(--danger);font-size:13px;text-align:center">Нужно хотя бы фото спереди</div>';return;}
+    if(!photos.length){if(targetResEl)targetResEl.innerHTML='<div style="color:var(--danger);font-size:13px;text-align:center">Добавь хотя бы одно фото — или закрой, это не обязательно</div>';return;}
     if(targetResEl)targetResEl.innerHTML='<div style="text-align:center;color:var(--cyan);font-family:\'Exo 2\';padding:10px">⚡ Система анализирует фигуру…</div>';
     const h=(player&&player.height)||+document.getElementById('o-h').value||168;
     const w=(player&&player.weight)||+document.getElementById('o-w').value||62;
@@ -1280,31 +1296,37 @@
   function analyzeBodyPhotos(){runBodyAnalysis(document.getElementById('bp-result'));}
 
   const SCALE_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-scale';
-  function onScaleScreenshotSelected(ev){
-    const file=ev.target.files&&ev.target.files[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=async()=>{
-      const b64=reader.result.split(',')[1];
-      toast('⚡ Считываю скрин с весов…');
+  function readFileAsB64(file){
+    return new Promise(resolve=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+  }
+  async function onScaleScreenshotSelected(ev){
+    const files=Array.from(ev.target.files||[]).slice(0,5);if(!files.length)return;
+    toast('⚡ Считываю скрин'+(files.length>1?'ы':'')+' с весов…');
+    const bm=DB.get('bodyMetrics',{})||{};
+    const fields=['weight','fat','muscle','water','visceral','bmi','bmr','boneMass','protein'];
+    const found=new Set();
+    let okAny=false;
+    for(const file of files){
       try{
+        const b64=await readFileAsB64(file);
         const r=await fetch(SCALE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:b64})});
         const res=await r.json();
-        if(!r.ok||res.error)throw new Error(res.error||'ошибка распознавания');
-        const bm=DB.get('bodyMetrics',{})||{};
-        const fields=['weight','fat','muscle','water','visceral','bmi','bmr','boneMass','protein'];
-        const found=[];
-        fields.forEach(f=>{if(res[f]!=null){bm[f]=res[f];found.push(f);}});
-        bm.date=today();
-        bodyMetrics=bm;DB.set('bodyMetrics',bm);
-        if(bm.weight)logWeightEntry(bm.weight,bm.fat);
-        renderBodyMetrics(bm);
-        toast(found.length?'✓ Считано: '+found.length+' показателей':'Не нашёл цифр на скрине');
-      }catch(e){
-        toast('Не удалось прочитать скрин с весов');
-      }
-      document.getElementById('scale-screenshot-input').value='';
-    };
-    reader.readAsDataURL(file);
+        if(!r.ok||res.error)continue;
+        okAny=true;
+        fields.forEach(f=>{if(res[f]!=null){bm[f]=res[f];found.add(f);}});
+      }catch(e){}
+    }
+    if(!okAny){toast('Не удалось прочитать скрины с весов');document.getElementById('scale-screenshot-input').value='';return;}
+    bm.date=today();
+    bodyMetrics=bm;DB.set('bodyMetrics',bm);
+    if(bm.weight)logWeightEntry(bm.weight,bm.fat);
+    renderBodyMetrics(bm);
+    toast(found.size?'✓ Считано: '+found.size+' показателей':'Не нашёл цифр на скринах');
+    document.getElementById('scale-screenshot-input').value='';
   }
 
   function addMeal(){
@@ -1344,8 +1366,8 @@
     if(startsNextDay)secs=secsUntilMidnight()+86400;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
       goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today()};
-    DB.set('player',player); // сохраняем профиль без фото — иначе на телефоне можно упереться в лимит localStorage и регистрация молча оборвётся
-    if(avatarPhoto)player.avatarUrl='data:image/jpeg;base64,'+avatarPhoto; // показываем своё фото только в памяти, пока ИИ рисует аниме-версию
+    if(avatarThumb)player.avatarUrl=avatarThumb; // сжатое фото — безопасно для localStorage, держится сразу даже если ИИ-стилизация не сработает
+    DB.set('player',player);
     // новый игрок начинает с нуля
     exp=0;lvl=1;need=1000;saveProgress();
     stats={strength:0,agility:0,health:0,intellect:0};saveStats();renderStats();
@@ -1380,7 +1402,9 @@
   function applySilhouette(){
     const el=document.getElementById('silh');if(!el)return;
     const photo=DB.get('bodyPhoto',null);
+    const ava=player&&player.avatarUrl;
     if(photo){el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
+    else if(ava){el.innerHTML='<img src="'+ava+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
     else{el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';el.classList.remove('has-photo');}
   }
   function initDobSelects(){
@@ -1932,59 +1956,53 @@
     prev.classList.add('show');
   }
 
-  // ===== ВРЕДНАЯ ПРИВЫЧКА =====
-  let habit=null;
-  let habitSelN=null,habitSelI=null;
+  // ===== ВРЕДНЫЕ ПРИВЫЧКИ / АСКЕЗА (несколько штук одновременно) =====
+  let habits=[];
+  let habitSelN=null,habitSelI=null,habitEditIdx=null;
 
   function initHabit(){
-    habit=DB.get('habit',null);
+    habits=DB.get('habits',null);
+    if(!habits){ // миграция со старой версии (одна привычка под ключом 'habit')
+      const old=DB.get('habit',null);
+      habits=old?[old]:[];
+      DB.set('habits',habits);
+    }
     renderHabit();
   }
 
   function renderHabit(){
-    const lbl=document.getElementById('habitLbl');
-    const days=document.getElementById('habitDays');
-    const sub=document.getElementById('habitSub');
-    const btn=document.getElementById('habitBtn');
-    const fail=document.getElementById('habitFail');
-    const bar=document.getElementById('habitBar');
-    const fill=document.getElementById('habitFill');
-    if(!habit){
-      if(lbl)lbl.textContent='🚫 ВРЕДНАЯ ПРИВЫЧКА';
-      if(days)days.textContent='—';
-      if(sub){sub.textContent='не добавлена';sub.style.color='var(--muted)';}
-      if(btn){btn.textContent='Добавить';}
-      if(fail)fail.style.display='none';
-      if(bar)bar.style.display='none';
-      return;
-    }
-    const start=new Date(habit.startDate);
-    const dayN=Math.max(0,Math.floor((Date.now()-start)/(86400000)));
-    if(lbl)lbl.textContent=(habit.icon||'🚫')+' БЕЗ '+habit.name.toUpperCase();
-    if(days)days.textContent=dayN;
-    const milestone=dayN>=100?'🏆 Легенда!':dayN>=30?'💪 30+ дней!':dayN>=7?'🔥 7+ дней!':'цель: 7 дней';
-    const d=habit.startDate;
-    if(sub){sub.textContent='с '+d.slice(8)+'.'+d.slice(5,7)+' · '+milestone;sub.style.color=dayN>=7?'var(--ok)':'var(--muted)';}
-    if(btn)btn.textContent='⚙';
-    if(fail)fail.style.display='';
-    if(bar)bar.style.display='';
-    if(fill){
-      const next=dayN>=100?100:dayN>=30?100:dayN>=7?30:7;
-      fill.style.width=Math.min(100,dayN/next*100)+'%';
-    }
+    const box=document.getElementById('habitsList');if(!box)return;
+    if(!habits.length){box.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px">Привычек нет — добавь по желанию, если хочешь что-то трекать</div>';return;}
+    box.innerHTML=habits.map((h,i)=>{
+      const start=new Date(h.startDate);
+      const dayN=Math.max(0,Math.floor((Date.now()-start)/86400000));
+      const milestone=dayN>=100?'🏆 Легенда!':dayN>=30?'💪 30+ дней!':dayN>=7?'🔥 7+ дней!':'цель: 7 дней';
+      return '<div class="steps-tile" style="margin-top:8px;cursor:pointer" onclick="openHabitModal('+i+')">'+
+        '<div class="steps-row">'+
+          '<div class="steps-left">'+
+            '<div class="steps-lbl" style="color:var(--violet)">'+(h.icon||'🚫')+' '+h.name.toUpperCase()+' — '+dayN+(dayN===1?' ДЕНЬ':' ДНЕЙ')+' БЕЗ ПРИВЫЧКИ</div>'+
+            '<div class="steps-sub" style="color:'+(dayN>=7?'var(--ok)':'var(--muted)')+'">'+milestone+'</div>'+
+          '</div>'+
+          '<button class="habit-fail" onclick="event.stopPropagation();habitFailed('+i+')">↺ Сорвался</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
   }
 
-  function openHabitModal(){
+  function openHabitModal(idx){
+    habitEditIdx=(idx===undefined)?null:idx;
+    const h=habitEditIdx!=null?habits[habitEditIdx]:null;
     habitSelN=null;habitSelI=null;
-    document.querySelectorAll('.hopt').forEach(h=>h.classList.remove('sel'));
+    document.querySelectorAll('.hopt').forEach(el=>el.classList.remove('sel'));
     document.getElementById('habit-custom').value='';
     const dateEl=document.getElementById('habit-date');
-    if(dateEl)dateEl.value=habit?habit.startDate:today();
-    if(habit){
-      document.querySelectorAll('.hopt').forEach(h=>{
-        if(h.dataset.n===habit.name){h.classList.add('sel');habitSelN=habit.name;habitSelI=habit.icon;}
+    if(dateEl)dateEl.value=h?h.startDate:today();
+    document.getElementById('habit-delete').style.display=h?'':'none';
+    if(h){
+      document.querySelectorAll('.hopt').forEach(el=>{
+        if(el.dataset.n===h.name){el.classList.add('sel');habitSelN=h.name;habitSelI=h.icon;}
       });
-      if(!habitSelN)document.getElementById('habit-custom').value=habit.name;
+      if(!habitSelN)document.getElementById('habit-custom').value=h.name;
     }
     document.getElementById('habitmodal').classList.add('show');
   }
@@ -2008,27 +2026,27 @@
     const dateVal=document.getElementById('habit-date').value;
     if(!name){toast('Выбери или введи привычку');return;}
     if(!dateVal){toast('Укажи дату начала');return;}
-    habit={name,icon,startDate:dateVal};
-    DB.set('habit',habit);
+    const entry={name,icon,startDate:dateVal};
+    if(habitEditIdx!=null)habits[habitEditIdx]=entry;else habits.push(entry);
+    DB.set('habits',habits);
     renderHabit();
     document.getElementById('habitmodal').classList.remove('show');
-    toast(icon+' Трекер запущен: без '+name.toLowerCase());
+    toast(icon+' Трекер запущен: '+name.toLowerCase()+' — без привычки');
   }
 
-  function habitFailed(){
-    const btn=document.getElementById('habitFail');
-    if(btn.dataset.confirm){
-      habit={...habit,startDate:today()};
-      DB.set('habit',habit);
-      renderHabit();
-      toast('↺ Начинаем заново — ты справишься! 💪');
-      delete btn.dataset.confirm;
-      btn.textContent='↺ Сорвался';
-    } else {
-      btn.textContent='Точно?';
-      btn.dataset.confirm='1';
-      setTimeout(()=>{if(btn.dataset.confirm){btn.textContent='↺ Сорвался';delete btn.dataset.confirm;}},3000);
-    }
+  function deleteHabit(){
+    if(habitEditIdx==null)return;
+    habits.splice(habitEditIdx,1);
+    DB.set('habits',habits);
+    renderHabit();
+    document.getElementById('habitmodal').classList.remove('show');
+  }
+
+  function habitFailed(idx){
+    habits[idx]={...habits[idx],startDate:today()};
+    DB.set('habits',habits);
+    renderHabit();
+    toast('↺ Начинаем заново — ты справишься! 💪');
   }
 
   init();
