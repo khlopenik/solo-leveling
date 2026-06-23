@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-21';
+  var APP_VERSION='2026-06-23-22';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -315,6 +315,7 @@
   .onb-inner{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line-strong);border-radius:16px;padding:22px 18px;box-shadow:0 0 30px rgba(43,107,255,.3)}
   .onb label{display:block;font-family:"Exo 2";font-size:11px;letter-spacing:1px;color:var(--cyan);margin:12px 0 5px}
   .onb input,.onb select{width:100%;padding:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:"Rajdhani";font-size:15px}
+  .onb input[type=checkbox]{width:auto;padding:0;flex:none}
   .onb .orow{display:flex;gap:12px} .onb .orow>div{flex:1;min-width:0}
   .enter{width:100%;margin-top:20px;padding:14px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--blue),var(--cyan));color:#04101f;font-family:"Exo 2";font-weight:700;font-size:15px;letter-spacing:1px;cursor:pointer;box-shadow:0 0 20px rgba(43,107,255,.5)}
   .ophotos{display:flex;gap:10px}
@@ -381,7 +382,7 @@
     <div class="sys-tag" style="font-size:13px">⟢ пробуждение ⟢</div>
     <h2 style="text-align:center;color:#fff;margin:6px 0 4px;text-shadow:0 0 16px rgba(70,215,255,.7)">СОЗДАНИЕ ИГРОКА</h2>
     <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5">Система должна узнать тебя,<br>чтобы подобрать нагрузку и нормы</p>
-    <label>Имя игрока</label><input id="o-name" placeholder="Любовь">
+    <label>Имя игрока</label><input id="o-name" placeholder="Имя">
     <label>Аватар <span style="color:var(--muted);font-weight:400">— по желанию, сделаем в стиле аниме</span></label>
     <div id="o-ava-tile" onclick="document.getElementById('o-avatar').click()" style="display:flex;align-items:center;gap:12px;border:1px dashed var(--line);border-radius:10px;padding:12px;cursor:pointer;background:rgba(0,0,0,.2);margin-bottom:16px">
       <div id="o-ava-preview" style="width:48px;height:48px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--cyan);background:rgba(43,107,255,.16);overflow:hidden">📷</div>
@@ -407,7 +408,7 @@
       </div>
       <div class="kbju-note" id="kp-note"></div>
     </div>
-    <label>Анализ тела по фото <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— по желанию</span></label>
+    <label>Анализ тела по фото</label>
     <div class="ophotos">
       <div class="oph" id="o-bp-tile-front" onclick="document.getElementById('o-bp-front').click()">＋<small>спереди</small></div>
       <div class="oph" id="o-bp-tile-side" onclick="document.getElementById('o-bp-side').click()">＋<small>сбоку</small></div>
@@ -416,11 +417,10 @@
     <input type="file" accept="image/*" id="o-bp-front" style="display:none" onchange="onBodyPhotoSelected('front',event,true)">
     <input type="file" accept="image/*" id="o-bp-side" style="display:none" onchange="onBodyPhotoSelected('side',event,true)">
     <input type="file" accept="image/*" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
-    <p style="color:var(--gold);font-size:11px;margin-top:6px;font-weight:700">⚠ НЕ ОБЯЗАТЕЛЬНО, ТОЛЬКО ПО ЖЕЛАНИЮ</p>
-    <p style="color:var(--muted);font-size:11px;margin-top:4px">Фото спереди/сбоку/сзади (мужчинам — в шортах/трусах, женщинам — в купальнике/белье) → AI оценит % жира и состав тела. Никто не обязан их присылать — если не хочешь, просто пропусти, будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
+    <p style="color:var(--gold);font-size:11px;margin-top:6px;font-weight:700">⚠ НЕ ОБЯЗАТЕЛЬНО, ТОЛЬКО ПО ЖЕЛАНИЮ — мужчинам в шортах/трусах, женщинам в купальнике/белье. AI оценит % жира и состав тела. Если не хочешь — пропусти, будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
     <p style="color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5">* Все оценки (вес, жир%, состав тела, калории) приблизительные, не медицинская точность и не врачебная рекомендация. Решения о тренировках, питании и здоровье — на твоей ответственности.</p>
-    <label class="onb-consent" style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer" onclick="this.querySelector('input').click()">
-      <input type="checkbox" id="o-consent" onchange="document.getElementById('o-awaken-btn').disabled=!this.checked" style="margin-top:3px;flex:none">
+    <label class="onb-consent" style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer">
+      <input type="checkbox" id="o-consent" onchange="document.getElementById('o-awaken-btn').disabled=!this.checked" style="margin-top:3px">
       <span style="font-size:12px;color:var(--muted);line-height:1.4">Я понимаю, что это не медицинское приложение, показатели приблизительные, и согласен(на) стать Игроком на этих условиях</span>
     </label>
     <button class="enter" id="o-awaken-btn" onclick="awaken()" disabled>⚔ ПРОБУДИТЬСЯ</button>
