@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-18';
+  var APP_VERSION='2026-06-23-19';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -462,6 +462,8 @@
       <div class="qi-div"></div>
       <div class="qi-goals">ЦЕЛИ</div>
       <div id="qgoals"></div>
+      <div id="extraGoals"></div>
+      <div class="priv-row" style="margin-top:4px"><span class="pl" style="color:var(--violet)">⚡ Доп. активность дня — не своё, но захотелось</span><span class="poke" style="padding:4px 10px" onclick="addExtraQuest()">＋</span></div>
       <div class="qi-div"></div>
       <div class="qi-warn">ВНИМАНИЕ: невыполнение ежедневного квеста повлечёт <b>соответствующее наказание.</b></div>
     </div>
@@ -670,19 +672,19 @@
 <div class="modal" id="qbmodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
     <div class="pn" style="text-align:center">⚙ Настрой свой квест</div>
-    <div class="pr" style="text-align:center;margin-bottom:6px">Выбери упражнения из 4 сфер. Можно добавить свои.</div>
+    <div class="pr" style="text-align:center;margin-bottom:6px">Выбери минимум 1 упражнение из каждой категории. Можно добавить свои.</div>
     <div id="qb-body"></div>
     <div style="margin-top:10px">
       <div style="font-family:'Exo 2';font-size:12px;color:var(--cyan);margin-bottom:6px">＋ Своё упражнение</div>
       <label style="font-family:'Exo 2';font-size:10px;color:var(--muted);letter-spacing:1px;display:block;margin:0 0 3px">Название</label>
-      <input id="qb-cn" placeholder="напр. Берпи" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box;margin-bottom:8px">
+      <input id="qb-cn" placeholder="напр. Йога" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box;margin-bottom:8px">
       <label style="font-family:'Exo 2';font-size:10px;color:var(--muted);letter-spacing:1px;display:block;margin:0 0 3px">Цель — необязательно</label>
       <input id="qb-ct" placeholder="напр. 20 повторений" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box;margin-bottom:8px">
       <label style="font-family:'Exo 2';font-size:10px;color:var(--cyan);letter-spacing:1px;display:block;margin:0 0 3px">Категория — обязательно</label>
-      <select id="qb-cc" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box"><option>💪 Сила</option><option>⚡ Ловкость</option><option>🧠 Интеллект</option><option>❤️ Здоровье</option></select>
+      <select id="qb-cc" style="width:100%;padding:9px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;color:#fff;font-family:'Rajdhani';font-size:14px;box-sizing:border-box"><option>💪 Сила</option><option>⚡ Ловкость</option><option>🏃 Выносливость</option><option>🧠 Интеллект</option><option>❤️ Здоровье</option></select>
       <button class="poke" style="width:100%;margin-top:8px" onclick="addCustomEx()">＋ Добавить</button>
     </div>
-    <div class="rnote" style="margin-top:10px">Минимум по 1 из каждой сферы. Больше целей = выше дневной потолок XP (в рейтинге учитывается объём).</div>
+    <div class="rnote" style="margin-top:10px">Обязательно: минимум 1 упражнение из каждой категории. Чем больше упражнений возьмёшь в квест — тем больше эксп получишь за день.</div>
     <button class="enter" style="margin-top:12px" onclick="saveQuest()">✓ Сохранить квест</button>
   </div>
 </div>
@@ -901,7 +903,7 @@
   function renderStats(){
     ['strength','agility','health','intellect'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
   }
-  const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🧠 Интеллект':'intellect','❤️ Здоровье':'health'};
+  const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🏃 Выносливость':'health','🧠 Интеллект':'intellect','❤️ Здоровье':'health'};
   // ===== Облако (Supabase edge function) =====
   const CLOUD='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/sync';
   const CLOUD_KEY='sb_publishable_6HlVMfE2_FxG4uARa5irXw_OrcquxBw';
@@ -1710,9 +1712,10 @@
     document.querySelectorAll('#periods button').forEach((b,i)=>b.classList.toggle('on',i===1));drawChart();}
   const qLib={
     '💪 Сила':[['Приседания',50,'5'],['Отжимания',50,'5'],['Подтягивания',80,'5'],['Планка',40,'60 сек'],['Пресс',40,'20']],
-    '⚡ Ловкость':[['Шаги',30,'8000'],['Бег',60,'2 км'],['Прыжки',30,'30'],['Скакалка',40,'100'],['Растяжка',30,'10 мин']],
-    '🧠 Интеллект':[['Чтение',40,'5 стр.'],['Изучение языка',40,'15 мин'],['Медитация',30,'10 мин']],
-    '❤️ Здоровье':[['Вода по норме',30,'1900 мл'],['Сон 8 часов',40,''],['День без сахара',40,'']]
+    '⚡ Ловкость':[['Прыжки на скакалке',40,'100'],['Берпи',40,'20'],['Танцы',30,'20 мин'],['Бой с тенью',30,'10 мин']],
+    '🏃 Выносливость':[['Шаги',30,'8000'],['Бег',60,'2 км'],['Велосипед',50,'5 км'],['Подъём по лестнице',40,'10 этаж.'],['Плавание',60,'500 м']],
+    '🧠 Интеллект':[['Чтение',40,'5 стр.'],['Изучение языка',40,'15 мин'],['Медитация',30,'10 мин'],['Скороговорки',30,'10'],['Стихи наизусть',30,'1']],
+    '❤️ Здоровье':[['Питьевой баланс (норма воды)',30,'1900 мл'],['Сон, минимум часов',40,'6']]
   };
   let qSel=new Set();
   let qCustom=[];
@@ -1754,6 +1757,12 @@
     renderQB();toast('＋ Добавлено: '+n);
   }
   function saveQuest(){
+    const missing=Object.keys(qLib).filter(cat=>{
+      const hasLib=qLib[cat].some(([n])=>qSel.has(cat+'|'+n));
+      const hasCustom=qCustom.some(c=>c.cat===cat);
+      return !hasLib&&!hasCustom;
+    });
+    if(missing.length){toast('Выбери хотя бы 1 упражнение из: '+missing.join(', '));return;}
     DB.set('qsel',[...qSel]);DB.set('qcustom',qCustom);DB.set('qtargets',qTargets);
     document.getElementById('qbmodal').classList.remove('show');
     renderQuest();toast('✓ Квест обновлён');
@@ -1763,6 +1772,7 @@
     for(const cat in qLib)qLib[cat].forEach(([n,xp,t])=>{const key=cat+'|'+n;if(qSel.has(key))items.push([n,xp,scaledTarget(qTargets[key]!=null?qTargets[key]:t,lvl),sphereOf[cat]]);});
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
     const g=document.getElementById('qgoals');
+    renderExtras();
     if(!items.length){
       g.innerHTML='<div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:14px;line-height:1.6">Квест не настроен<br><button onclick="openQB()" style="margin-top:14px;background:var(--cyan);color:#000;border:none;padding:8px 20px;border-radius:8px;font-family:\'Exo 2\';font-size:13px;font-weight:700;cursor:pointer">⚙ Настроить квест</button></div>';
       return;
@@ -1777,6 +1787,28 @@
       const nm=row.querySelector('.qrn').textContent;
       if(done.includes(nm)){row.classList.add('done');const c=row.querySelector('.qrc');if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(\d+)(.*)\]/,(m,a,b,r)=>'['+b+'/'+b+r+']');}
     });
+  }
+  // ===== ДОП. АКТИВНОСТЬ ДНЯ (разовая, не входит в постоянный квест) =====
+  function todaysExtras(){const e=DB.get('extraQuest',null);return (e&&e.date===today())?e.list:[];}
+  function saveExtras(list){DB.set('extraQuest',{date:today(),list});}
+  function addExtraQuest(){
+    const n=prompt('Что добавляешь сегодня? (например: пробежка 3 км)');
+    if(!n||!n.trim())return;
+    const list=todaysExtras();
+    list.push({n:n.trim(),xp:30});
+    saveExtras(list);
+    renderExtras();
+    toast('⚡ Добавлено в квест на сегодня: '+n.trim());
+  }
+  function renderExtras(){
+    const box=document.getElementById('extraGoals');if(!box)return;
+    const list=todaysExtras();
+    if(!list.length){box.innerHTML='';return;}
+    const done=qlogGet().done;
+    box.innerHTML=list.map(it=>{
+      const cls=done.includes(it.n)?' done':'';
+      return '<div class="qrow'+cls+'" data-sphere="health" data-reps="" onclick="toggle(this,'+it.xp+')"><span class="qrn">'+it.n+'</span><span class="qrc">[ доп ]</span><span class="qrk">✓</span></div>';
+    }).join('');
   }
   function renderDays(){
     const el=document.getElementById('daycells');if(!el)return;
