@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-32';
+  var APP_VERSION='2026-06-23-33';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -919,10 +919,13 @@
     const rows=document.querySelectorAll('#qgoals .qrow');
     if(!rows.length)return;
     const allDone=[...rows].every(r=>r.classList.contains('done'));
-    if(allDone&&streakDate!==today()){
-      streak=(streakDate===yesterday())?streak+1:1;
-      streakDate=today();if(streak>streakBest)streakBest=streak;
-      saveProgress();renderDays();renderStreak();toast('🔥 День засчитан! Серия: '+streak);
+    if(allDone){
+      if(streakDate!==today()){
+        streak=(streakDate===yesterday())?streak+1:1;
+        streakDate=today();if(streak>streakBest)streakBest=streak;
+        saveProgress();renderDays();renderStreak();toast('🔥 День засчитан! Серия: '+streak);
+      }
+      upgradeExtrasToFullXp();
     }
   }
   function renderStreak(){
@@ -1024,23 +1027,71 @@
     const m=player&&player.sex==='Мужской';
     el.textContent=(m?'Пробуждённый':'Пробуждённая')+' · день '+daysSinceJoin();
   }
+  // бонус за серию без пропусков — применяется к ЛЮБОМУ заработанному XP за день
+  function streakXpMultiplier(s){
+    if(s>=365)return 1.30;
+    if(s>=180)return 1.25;
+    if(s>=90)return 1.20;
+    if(s>=30)return 1.15;
+    if(s>=14)return 1.10;
+    if(s>=7)return 1.05;
+    return 1.0;
+  }
+  function isMainQuestDoneToday(){
+    const rows=document.querySelectorAll('#qgoals .qrow');
+    if(!rows.length)return false;
+    return [...rows].every(r=>r.classList.contains('done'));
+  }
+  function setExtraAwarded(name,val){
+    const list=todaysExtras();
+    const it=list.find(x=>x.n===name);
+    if(it){it.awarded=val;saveExtras(list);}
+  }
   function toggle(el,xp){
     const c=el.querySelector('.qrc');
+    const isExtra=el.dataset.extra==='1';
+    const nm0=el.querySelector('.qrn').textContent;
     if(el.classList.contains('done')){
-      el.classList.remove('done');exp-=xp;
+      const awarded=+el.dataset.awarded||xp;
+      el.classList.remove('done');exp-=awarded;
       if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(.+)\]/,(m,a,b)=>'[0/'+b+']');
-      toast('−'+xp+' XP');
+      toast('−'+awarded+' XP');
+      if(isExtra)setExtraAwarded(nm0,null);
     }else{
-      el.classList.add('done');exp+=xp;
+      // допы (футбол, доп.активность) дают полную ставку только если основной квест выполнен на 100% — иначе половину
+      const gateMult=isExtra?(isMainQuestDoneToday()?1:0.5):1;
+      const mult=streakXpMultiplier(streak)*gateMult;
+      const awarded=Math.max(1,Math.round(xp*mult));
+      el.dataset.awarded=awarded;
+      el.classList.add('done');exp+=awarded;
       if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(\d+)(.*)\]/,(m,a,b,r)=>'['+b+'/'+b+r+']');
       if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);toast('⬆ LEVEL UP! Уровень '+lvl);}
-      else toast('+'+xp+' XP');
+      else toast('+'+awarded+' XP'+(mult>1?' (×'+mult.toFixed(2)+')':''));
+      if(isExtra)setExtraAwarded(nm0,awarded);
     }
     const nm=el.querySelector('.qrn').textContent, sp=el.dataset.sphere||'health', q=qlogGet();
     const reps=+el.dataset.reps||0;
     if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;if(reps)addExerciseTotal(nm,reps);}
     else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);if(reps)addExerciseTotal(nm,-reps);}
     saveStats();renderStats();qlogSet(q);saveProgress();render();checkStreak();renderAch('progAch');renderAch('profAch');
+  }
+  // если основной квест выполнен на 100% — допы, отмеченные ДО этого момента, до-получают полную ставку
+  function upgradeExtrasToFullXp(){
+    let bonus=0;
+    const list=todaysExtras();
+    document.querySelectorAll('#extraGoals .qrow.done[data-extra="1"]').forEach(el=>{
+      const nm=el.querySelector('.qrn').textContent;
+      const it=list.find(x=>x.n===nm);if(!it)return;
+      const fullAwarded=Math.max(1,Math.round(it.xp*streakXpMultiplier(streak)));
+      const cur=it.awarded!=null?it.awarded:(+el.dataset.awarded||0);
+      if(fullAwarded>cur){bonus+=(fullAwarded-cur);it.awarded=fullAwarded;el.dataset.awarded=fullAwarded;}
+    });
+    if(bonus>0){
+      saveExtras(list);
+      exp+=bonus;
+      if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);}
+      saveProgress();render();toast('🎯 Квест выполнен полностью! +'+bonus+' XP бонус за допы');
+    }
   }
   // ===== СУММАРНЫЕ ПОВТОРЕНИЯ УПРАЖНЕНИЙ (для ачивок за упражнения) =====
   let exerciseTotals={};
@@ -1935,7 +1986,8 @@
     const done=qlogGet().done;
     box.innerHTML=list.map(it=>{
       const cls=done.includes(it.n)?' done':'';
-      return '<div class="qrow'+cls+'" data-sphere="'+(it.sp||'health')+'" data-reps="" onclick="toggle(this,'+it.xp+')"><span class="qrn">'+it.n+'</span><span class="qrc">[ доп ]</span><span class="qrk">✓</span></div>';
+      const aw=it.awarded!=null?' data-awarded="'+it.awarded+'"':'';
+      return '<div class="qrow'+cls+'" data-sphere="'+(it.sp||'health')+'" data-reps="" data-extra="1" data-basexp="'+it.xp+'"'+aw+' onclick="toggle(this,'+it.xp+')"><span class="qrn">'+it.n+'</span><span class="qrc">[ доп ]</span><span class="qrk">✓</span></div>';
     }).join('');
   }
   function renderDays(){
