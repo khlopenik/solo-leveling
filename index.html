@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-26';
+  var APP_VERSION='2026-06-23-27';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1197,6 +1197,7 @@
   // ===== АНАЛИЗ ТЕЛА ПО ФОТО =====
   const BODY_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/analyze-body';
   const AVATAR_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/generate-avatar';
+  const BODY_FIGURE_AI='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/generate-body-figure';
   let avatarPhoto=null,avatarThumb=null;
   function compressImageDataUrl(dataUrl,maxDim,quality){
     return new Promise(resolve=>{
@@ -1237,6 +1238,17 @@
       toast('✓ Аватар в стиле Solo Leveling готов');
     }catch(e){toast('Не получилось перерисовать в аниме-стиле — оставила твою фотку');}
     avatarPhoto=null;
+  }
+  async function generateBodyFigure(photoB64,sex,fat){
+    if(!photoB64)return;
+    try{
+      const r=await fetch(BODY_FIGURE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:photoB64,uid:getUid(),sex,fat})});
+      const res=await r.json();
+      if(!r.ok||res.error||!res.url)throw new Error(res.error||'ошибка генерации');
+      player.bodyFigureUrl=res.url;DB.set('player',player);
+      applySilhouette();cloudPush();
+      toast('✓ Фигура тела готова');
+    }catch(e){/* тихо — на экране уже есть реальное фото */}
   }
   function renamePlayer(){
     if(!player)return;
@@ -1298,7 +1310,12 @@
       Object.keys(bm).forEach(k=>{if(bm[k]===undefined||bm[k]===null)delete bm[k];});
       bodyMetrics=bm;DB.set('bodyMetrics',bm);
       const shownPhoto=bodyPhotos.front||bodyPhotos.side||bodyPhotos.back;
-      if(shownPhoto){DB.set('bodyPhoto',shownPhoto);applySilhouette();}
+      if(shownPhoto){
+        DB.set('bodyPhoto',shownPhoto);
+        if(player){player.bodyFigureUrl=null;DB.set('player',player);} // сбрасываем старую фигуру — генерируем новую под актуальное фото
+        applySilhouette();
+        generateBodyFigure(shownPhoto,sex,bm.fat); // в фоне — не блокирует интерфейс
+      }
       if(bm.weight)logWeightEntry(bm.weight,bm.fat);
       renderBodyMetrics(bm);
       if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
@@ -1420,8 +1437,10 @@
   }
   function applySilhouette(){
     const el=document.getElementById('silh');if(!el)return;
+    const figureUrl=player&&player.bodyFigureUrl;
     const photo=DB.get('bodyPhoto',null);
-    if(photo){el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
+    if(figureUrl){el.innerHTML='<img src="'+figureUrl+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
+    else if(photo){el.innerHTML='<img src="data:image/jpeg;base64,'+photo+'" style="width:100%;height:100%;object-fit:cover">';el.classList.add('has-photo');}
     else{el.textContent=player&&player.sex==='Мужской'?'🧍‍♂️':'🧍‍♀️';el.classList.remove('has-photo');}
     renderBodyBadges();
   }
