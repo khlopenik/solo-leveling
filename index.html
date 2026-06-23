@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-31';
+  var APP_VERSION='2026-06-23-32';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1265,7 +1265,10 @@
     if(!photoB64)return;
     const st=showStatus?document.getElementById('bp-figure-status'):null;
     try{
-      const r=await fetch(BODY_FIGURE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:photoB64,uid:getUid(),sex,fat})});
+      // OpenAI отклоняет слишком крупные/несжатые фото с телефона (400) — сжимаем перед отправкой, как и для аватара
+      const compressedDataUrl=await compressImageDataUrl('data:image/jpeg;base64,'+photoB64,1024,0.85);
+      const compressed=compressedDataUrl.split(',')[1]||photoB64;
+      const r=await fetch(BODY_FIGURE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:compressed,uid:getUid(),sex,fat})});
       const res=await r.json();
       if(!r.ok||res.error||!res.url)throw new Error(res.error||'ошибка генерации');
       player.bodyFigureUrl=res.url;DB.set('player',player);
