@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-28';
+  var APP_VERSION='2026-06-23-29';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -237,6 +237,9 @@
   .badge.imgbadge img{width:100%;height:100%;object-fit:cover}
   .ach-group-title{font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan);margin:16px 0 6px;text-transform:uppercase}
   .ach-group-title:first-child{margin-top:0}
+  .ach-preview{max-height:118px;overflow:hidden;position:relative}
+  .ach-preview .ach-group-title{display:none}
+  .ach-full{max-height:72vh;overflow-y:auto;padding-right:2px}
   .streak{display:flex;align-items:center;justify-content:center;gap:8px;font-family:"Exo 2";font-weight:700;font-size:24px;color:var(--gold)}
   .daycells{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:14px}
   .dcell{aspect-ratio:1;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:rgba(0,0,0,.22)}
@@ -544,8 +547,8 @@
       <div class="sec-title">Серия дней <span style="color:var(--muted);font-size:11px">рекорд: 21</span></div>
       <div class="streak">🔥 12 ДНЕЙ ПОДРЯД</div>
       <div class="daycells" id="daycells"></div>
-      <div class="sec-title" style="margin-top:18px">Достижения</div>
-      <div class="ach" id="progAch"></div>
+      <div class="sec-title" style="margin-top:18px;cursor:pointer" onclick="openAchModal()">Достижения <span style="color:var(--cyan-soft);font-size:11px;margin-left:auto">⤢ все</span></div>
+      <div class="ach ach-preview" id="progAch"></div>
     </div>
     <div class="window">
       <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px" id="bmDate">нет данных</span></div>
@@ -769,6 +772,14 @@
   </div>
 </div>
 <!-- ======= АНАЛИЗ ТЕЛА ПО ФОТО ======= -->
+<div class="modal" id="achmodal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pcard" style="text-align:left;max-height:88vh;overflow-y:auto">
+    <div class="pn" style="text-align:center">🏆 Все достижения</div>
+    <div class="pr" style="text-align:center;margin-bottom:10px;font-size:12px">Чёрно-белые — пока не получены, цветные — уже твои</div>
+    <div class="ach-full" id="achFull"></div>
+    <div class="pclose" style="text-align:center;margin-top:10px" onclick="document.getElementById('achmodal').classList.remove('show')">закрыть</div>
+  </div>
+</div>
 <div class="modal" id="bodyphotomodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
     <div class="pn" style="text-align:center">🧍 Анализ тела по фото</div>
@@ -1974,6 +1985,7 @@
       ).join('')+'</div>'
     ).join('');
   }
+  function openAchModal(){renderAch('achFull');document.getElementById('achmodal').classList.add('show');}
 
   // ===== ПРОФИЛЬ (полный экран) =====
   function openProfScreen(){
