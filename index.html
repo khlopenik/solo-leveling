@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-33';
+  var APP_VERSION='2026-06-23-34';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -240,6 +240,19 @@
   .ach-preview{max-height:118px;overflow:hidden;position:relative}
   .ach-preview .ach-group-title{display:none}
   .ach-full{max-height:72vh;overflow-y:auto;padding-right:2px}
+  .ach-big{grid-template-columns:repeat(3,1fr)!important;gap:14px!important}
+  .badge3d{aspect-ratio:1;cursor:pointer;perspective:700px}
+  .badge3d-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+  .badge3d.flipped .badge3d-inner{transform:rotateY(180deg)}
+  .badge3d-front,.badge3d-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .badge3d-front{background:rgba(0,0,0,.25);font-size:34px}
+  .badge3d-front.lock{opacity:.35;filter:grayscale(1)}
+  .badge3d-front img{width:100%;height:100%;object-fit:cover}
+  .badge3d-back{background:rgba(43,107,255,.18);transform:rotateY(180deg);padding:8px;text-align:center;flex-direction:column;gap:4px}
+  .badge3d-back.un{background:rgba(92,255,157,.16)}
+  .b3-name{font-family:"Exo 2";font-size:11px;color:var(--cyan);font-weight:700;letter-spacing:.5px}
+  .b3-req{font-size:10px;color:var(--text);line-height:1.3}
+  .b3-reward{font-size:9px;color:var(--gold)}
   .streak{display:flex;align-items:center;justify-content:center;gap:8px;font-family:"Exo 2";font-weight:700;font-size:24px;color:var(--gold)}
   .daycells{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:14px}
   .dcell{aspect-ratio:1;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:rgba(0,0,0,.22)}
@@ -2010,7 +2023,13 @@
     g2_r2_c2:['Пресс',30], g2_r2_c3:['Пресс',100],
     g2_r2_c4:['__alldone__',1],
     g4_r4_c3:['Приседания',30],
+    // Выносливость
+    g3_r0_c0:['Бег',10], g3_r0_c1:['Бег',50], g3_r0_c2:['Бег',100],
+    g3_r1_c0:['Велосипед',50], g3_r1_c1:['Велосипед',200],
+    g3_r2_c0:['Шаги',50000], g3_r2_c1:['Шаги',200000],
+    g3_r3_c0:['Подъём по лестнице',100], g3_r3_c1:['Плавание',5000],
   };
+  const EXERCISE_UNIT={'Приседания':'раз','Отжимания':'раз','Пресс':'раз','Бег':'км','Велосипед':'км','Шаги':'шагов','Подъём по лестнице':'этажей','Плавание':'м'};
   function getExerciseAchItems(){
     const sheets=[['g2',3,5],['g3',4,6],['g4',5,6]];
     const items=[];
@@ -2018,9 +2037,13 @@
       for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
         const key=g+'_r'+r+'_c'+c;
         const map=EXERCISE_ACH_MAP[key];
-        let un=false;
-        if(map){const[ex,need]=map;un=ex==='__alldone__'?streak>=1:(exerciseTotals[ex]||0)>=need;}
-        items.push({img:key,un});
+        let un=false,n='Загадка',req='Пока нет данных',reward='Открывает значок в коллекции';
+        if(map){
+          const[ex,need]=map;
+          if(ex==='__alldone__'){un=streak>=1;n='Идеальный день';req='Выполни весь квест на 100% один день';}
+          else{un=(exerciseTotals[ex]||0)>=need;n=ex+' '+need;req='Суммарно '+need+' '+(EXERCISE_UNIT[ex]||'')+' (' +ex+')';}
+        }
+        items.push({img:key,un,n,req,reward});
       }
     });
     return items;
@@ -2030,60 +2053,88 @@
     const pos=myRankPos;
     return [
       {title:'Достижения',items:[
-        {img:'g1_r0_c0',un:true},
-        {img:'g1_r0_c1',un:streak>=1},
-        {img:'g1_r0_c2',un:streak>=3},
-        {img:'g1_r0_c3',un:streak>=7},
-        {img:'g1_r0_c4',un:streak>=10},
-        {img:'g1_r1_c0',un:streak>=21},
-        {img:'g1_r1_c1',un:streak>=1},
-        {img:'g1_r1_c2',un:streak>=30},
-        {img:'g1_r1_c3',un:false},
-        {img:'g1_r1_c4',un:lvl>=2},
-        {img:'g1_r2_c0',un:streak>=5},
-        {img:'g1_r2_c1',un:false},
-        {img:'g1_r2_c2',un:streakBest>=14},
-        {img:'g1_r2_c3',un:streak>=90},
-        {img:'g1_r2_c4',un:streak>=180},
+        {img:'g1_r0_c0',un:true,n:'Добро пожаловать',req:'Выдаётся всем при регистрации',reward:'Открывает значок в коллекции'},
+        {img:'g1_r0_c1',un:streak>=1,n:'Первый шаг',req:'Выполни квест на 100% один день',reward:'Открывает значок в коллекции'},
+        {img:'g1_r0_c2',un:streak>=3,n:'Разгон',req:'Серия 3 дня подряд',reward:'Открывает значок в коллекции'},
+        {img:'g1_r0_c3',un:streak>=7,n:'Неделя силы',req:'Серия 7 дней подряд',reward:'+5% к XP за день (серия 7+)'},
+        {img:'g1_r0_c4',un:streak>=10,n:'Десятка',req:'Серия 10 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g1_r1_c0',un:streak>=21,n:'Привычка',req:'Серия 21 день подряд',reward:'Открывает значок в коллекции'},
+        {img:'g1_r1_c1',un:streak>=1,n:'Огонёк',req:'Серия 1 день',reward:'Открывает значок в коллекции'},
+        {img:'g1_r1_c2',un:streak>=30,n:'Месяц дисциплины',req:'Серия 30 дней подряд',reward:'+15% к XP за день (серия 30+)'},
+        {img:'g1_r1_c3',un:false,n:'Загадка',req:'Скоро откроется',reward:'?'},
+        {img:'g1_r1_c4',un:lvl>=2,n:'Новый уровень',req:'Достигни 2 уровня',reward:'Открывает значок в коллекции'},
+        {img:'g1_r2_c0',un:streak>=5,n:'Пятидневка',req:'Серия 5 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g1_r2_c1',un:false,n:'Загадка',req:'Скоро откроется',reward:'?'},
+        {img:'g1_r2_c2',un:streakBest>=14,n:'Рекордсмен',req:'Лучшая серия — 14 дней',reward:'Открывает значок в коллекции'},
+        {img:'g1_r2_c3',un:streak>=90,n:'Три месяца',req:'Серия 90 дней подряд',reward:'+20% к XP за день (серия 90+)'},
+        {img:'g1_r2_c4',un:streak>=180,n:'Полгода',req:'Серия 180 дней подряд',reward:'+25% к XP за день (серия 180+)'},
       ]},
       {title:'Серия дней',items:[
-        {img:'g5_r0_c0',un:streak>=1},{img:'g5_r0_c1',un:streak>=3},{img:'g5_r0_c2',un:streak>=7},
-        {img:'g5_r0_c3',un:streak>=14},{img:'g5_r0_c4',un:streak>=21},{img:'g5_r0_c5',un:streak>=30},
-        {img:'g5_r0_c6',un:streak>=45},{img:'g5_r1_c0',un:streak>=60},{img:'g5_r1_c1',un:streak>=90},
-        {img:'g5_r1_c2',un:streak>=120},{img:'g5_r1_c3',un:streak>=150},{img:'g5_r1_c4',un:streak>=180},
-        {img:'g5_r1_c5',un:streak>=210},{img:'g5_r1_c6',un:streak>=365},
+        {img:'g5_r0_c0',un:streak>=1,n:'1 день',req:'Серия 1 день подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r0_c1',un:streak>=3,n:'3 дня',req:'Серия 3 дня подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r0_c2',un:streak>=7,n:'7 дней',req:'Серия 7 дней подряд',reward:'+5% к XP за день'},
+        {img:'g5_r0_c3',un:streak>=14,n:'14 дней',req:'Серия 14 дней подряд',reward:'+10% к XP за день'},
+        {img:'g5_r0_c4',un:streak>=21,n:'21 день',req:'Серия 21 день подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r0_c5',un:streak>=30,n:'30 дней',req:'Серия 30 дней подряд',reward:'+15% к XP за день'},
+        {img:'g5_r0_c6',un:streak>=45,n:'45 дней',req:'Серия 45 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r1_c0',un:streak>=60,n:'60 дней',req:'Серия 60 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r1_c1',un:streak>=90,n:'90 дней',req:'Серия 90 дней подряд',reward:'+20% к XP за день'},
+        {img:'g5_r1_c2',un:streak>=120,n:'120 дней',req:'Серия 120 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r1_c3',un:streak>=150,n:'150 дней',req:'Серия 150 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r1_c4',un:streak>=180,n:'180 дней',req:'Серия 180 дней подряд',reward:'+25% к XP за день'},
+        {img:'g5_r1_c5',un:streak>=210,n:'210 дней',req:'Серия 210 дней подряд',reward:'Открывает значок в коллекции'},
+        {img:'g5_r1_c6',un:streak>=365,n:'365 дней',req:'Серия 365 дней подряд',reward:'+30% к XP за день (максимум)'},
       ]},
       {title:'Место в рейтинге',items:[
-        {img:'g6_r0_c0',un:pos===1},{img:'g6_r0_c1',un:pos===2},{img:'g6_r0_c2',un:pos===3},
-        {img:'g6_r0_c3',un:pos!=null&&pos<=10},{img:'g6_r0_c4',un:pos!=null&&pos<=50},
-        {img:'g6_r1_c0',un:pos!=null&&pos<=100},{img:'g6_r1_c1',un:pos!=null&&pos<=500},
-        {img:'g6_r1_c2',un:pos!=null&&pos<=1000},{img:'g6_r1_c3',un:false},{img:'g6_r1_c4',un:pos===1},
+        {img:'g6_r0_c0',un:pos===1,n:'1 место',req:'1 место в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r0_c1',un:pos===2,n:'2 место',req:'2 место в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r0_c2',un:pos===3,n:'3 место',req:'3 место в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r0_c3',un:pos!=null&&pos<=10,n:'Топ-10',req:'Топ-10 в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r0_c4',un:pos!=null&&pos<=50,n:'Топ-50',req:'Топ-50 в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r1_c0',un:pos!=null&&pos<=100,n:'Топ-100',req:'Топ-100 в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r1_c1',un:pos!=null&&pos<=500,n:'Топ-500',req:'Топ-500 в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r1_c2',un:pos!=null&&pos<=1000,n:'Топ-1000',req:'Топ-1000 в общем рейтинге',reward:'Открывает значок в коллекции'},
+        {img:'g6_r1_c3',un:false,n:'Загадка',req:'Скоро откроется',reward:'?'},
+        {img:'g6_r1_c4',un:pos===1,n:'Чемпион',req:'1 место в общем рейтинге',reward:'Открывает значок в коллекции'},
       ]},
       {title:'Упражнения',items:getExerciseAchItems()},
       {title:'Характеристики',items:[
-        {em:'💪',n:'Силач',un:stats.strength>=20},
-        {em:'⚡',n:'Ловкач',un:stats.agility>=20},
-        {em:'🧠',n:'Интеллект',un:stats.intellect>=20},
-        {em:'❤️',n:'Здоровяк',un:stats.health>=20},
-        {em:'🕯️',n:'Волевой',un:stats.will>=20},
+        {em:'💪',n:'Силач',req:'Сила ≥ 20',reward:'Открывает значок в коллекции',un:stats.strength>=20},
+        {em:'⚡',n:'Ловкач',req:'Ловкость ≥ 20',reward:'Открывает значок в коллекции',un:stats.agility>=20},
+        {em:'🧠',n:'Интеллект',req:'Интеллект ≥ 20',reward:'Открывает значок в коллекции',un:stats.intellect>=20},
+        {em:'❤️',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'Открывает значок в коллекции',un:stats.health>=20},
+        {em:'🕯️',n:'Волевой',req:'Дух воли ≥ 20',reward:'Открывает значок в коллекции',un:stats.will>=20},
       ]},
       {title:'Без привычки',items:[
-        {em:'🚫',n:'7 без привычки',un:habitDays>=7},
-        {em:'💜',n:'30 без привычки',un:habitDays>=30},
-        {em:'🌟',n:'100 без привычки',un:habitDays>=100},
+        {em:'🚫',n:'7 без привычки',req:'7 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=7},
+        {em:'💜',n:'30 без привычки',req:'30 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=30},
+        {em:'🌟',n:'100 без привычки',req:'100 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=100},
       ]},
     ];
   }
-  function renderAch(elId){
+  function renderAch(elId,full){
     const el=document.getElementById(elId);if(!el)return;
-    el.innerHTML=getAchGroups().map(g=>'<div class="ach-group-title">'+g.title+'</div><div class="ach">'+
-      g.items.map(a=>a.img?
-        '<div class="badge imgbadge'+(a.un?'':' lock')+'"><img src="'+ACH_DIR+a.img+'.png" alt=""></div>'
-        :'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>'
-      ).join('')+'</div>'
-    ).join('');
+    const groups=getAchGroups();
+    el.innerHTML=groups.map(g=>{
+      const items=full?[...g.items].sort((a,b)=>(b.un?1:0)-(a.un?1:0)):g.items;
+      return '<div class="ach-group-title">'+g.title+'</div><div class="ach'+(full?' ach-big':'')+'">'+
+        items.map(a=>full?renderBadge3d(a):renderBadgeSimple(a)).join('')+'</div>';
+    }).join('');
   }
-  function openAchModal(){renderAch('achFull');document.getElementById('achmodal').classList.add('show');}
+  function renderBadgeSimple(a){
+    return a.img?
+      '<div class="badge imgbadge'+(a.un?'':' lock')+'"><img src="'+ACH_DIR+a.img+'.png" alt=""></div>'
+      :'<div class="badge'+(a.un?'':' lock')+'">'+a.em+'<small>'+a.n+'</small></div>';
+  }
+  function renderBadge3d(a){
+    const front=a.img?'<img src="'+ACH_DIR+a.img+'.png" alt="">':a.em;
+    return '<div class="badge3d" onclick="this.classList.toggle(\'flipped\')">'+
+      '<div class="badge3d-inner">'+
+        '<div class="badge3d-front'+(a.un?'':' lock')+'">'+front+'</div>'+
+        '<div class="badge3d-back'+(a.un?' un':'')+'"><div class="b3-name">'+(a.n||'')+(a.un?' ✓':'')+'</div><div class="b3-req">'+(a.req||'')+'</div><div class="b3-reward">🎁 '+(a.reward||'')+'</div></div>'+
+      '</div></div>';
+  }
+  function openAchModal(){renderAch('achFull',true);document.getElementById('achmodal').classList.add('show');}
 
   // ===== ПРОФИЛЬ (полный экран) =====
   function openProfScreen(){
