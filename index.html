@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-29';
+  var APP_VERSION='2026-06-23-30';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1801,6 +1801,14 @@
   }
   // разбивает цель вида "60 сек"/"2 км" на число (редактируемое) и суффикс (единицу измерения)
   function splitTarget(t){const m=/^(\d+)\s*(.*)$/.exec(t||'');return m?[m[1],m[2]]:[null,t||''];}
+  // награда зависит от фактического объёма (цели), а не фиксирована — кто делает больше, получает больше.
+  // потолок ×5 от базовой цели — чтобы нельзя было просто вписать огромное число и получить эксп без усилий
+  function volumeXp(baseXp,baselineNum,actualNum){
+    if(baselineNum==null||!(+baselineNum>0))return baseXp;
+    const xpPerUnit=baseXp/(+baselineNum);
+    const capped=Math.min(+actualNum,(+baselineNum)*5);
+    return Math.max(1,Math.round(xpPerUnit*capped));
+  }
   function renderQB(){
     let h='';
     for(const cat in qLib){
@@ -1812,10 +1820,11 @@
         const cur=qTargets[key]!=null?qTargets[key]:numDefault;
         const eff=isNum?scaledTarget(cur,lvl):null;
         const sfx=suffix?(' '+suffix):'';
+        const effXp=isNum?volumeXp(xp,numDefault,eff):xp;
         const hint=(isNum&&lvl>1)?' <span style="color:var(--muted);font-size:11px">(сейчас: '+eff+sfx+')</span>':'';
-        const tgtHtml=isNum?'<span style="color:var(--muted);font-size:11px">старт:</span> <input type="number" min="1" value="'+cur+'" onclick="event.stopPropagation()" onchange="setQTarget(\''+key+'\',this.value)" style="width:54px;padding:4px 6px;margin-left:4px;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;color:var(--cyan);font-family:\'Rajdhani\';font-size:13px;text-align:center"><span style="color:var(--muted);font-size:11px">'+sfx+'</span>'+hint
+        const tgtHtml=isNum?'<span style="color:var(--muted);font-size:11px">старт:</span> <input type="number" min="1" value="'+cur+'" onclick="event.stopPropagation()" onchange="setQTarget(\''+key+'\',this.value);renderQB()" style="width:54px;padding:4px 6px;margin-left:4px;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:6px;color:var(--cyan);font-family:\'Rajdhani\';font-size:13px;text-align:center"><span style="color:var(--muted);font-size:11px">'+sfx+'</span>'+hint
           :(t?' <span style="color:var(--muted);font-size:12px">· '+t+'</span>':'');
-        h+='<div class="priv-row"><span class="pl">'+n+tgtHtml+' <span style="color:var(--gold);font-size:11px">+'+xp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
+        h+='<div class="priv-row"><span class="pl">'+n+tgtHtml+' <span style="color:var(--gold);font-size:11px">+'+effXp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
       });
       qCustom.filter(c=>c.cat===cat).forEach((c,i)=>{
         h+='<div class="priv-row"><span class="pl">'+c.n+(c.t?' <span style="color:var(--muted);font-size:12px">· '+c.t+'</span>':'')+' <span style="color:var(--gold);font-size:11px">+'+c.xp+'</span> <span style="color:var(--muted);font-size:11px">(своё)</span></span><div class="sw on" onclick="this.classList.toggle(\'on\')"></div></div>';
@@ -1850,8 +1859,10 @@
       if(!qSel.has(key))return;
       const [numDefault,suffix]=splitTarget(t);
       const base=numDefault!=null?(qTargets[key]!=null?qTargets[key]:numDefault):t;
-      const scaled=numDefault!=null?scaledTarget(base,lvl)+(suffix?(' '+suffix):''):base;
-      items.push([n,xp,scaled,sphereOf[cat]]);
+      const scaledNum=numDefault!=null?scaledTarget(base,lvl):null;
+      const scaled=numDefault!=null?scaledNum+(suffix?(' '+suffix):''):base;
+      const effXp=numDefault!=null?volumeXp(xp,numDefault,scaledNum):xp;
+      items.push([n,effXp,scaled,sphereOf[cat]]);
     });
     qCustom.forEach(c=>items.push([c.n,c.xp,c.t,sphereOf[c.cat]||'health']));
     const g=document.getElementById('qgoals');
