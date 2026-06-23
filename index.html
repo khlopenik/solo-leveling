@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-35';
+  var APP_VERSION='2026-06-23-36';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -441,6 +441,12 @@
     <input type="file" accept="image/*" id="o-bp-back" style="display:none" onchange="onBodyPhotoSelected('back',event,true)">
     <p style="color:var(--gold);font-size:11px;margin-top:6px;font-weight:700">⚠ НЕ ОБЯЗАТЕЛЬНО, ТОЛЬКО ПО ЖЕЛАНИЮ — мужчинам в шортах/трусах, женщинам в купальнике/белье. AI оценит % жира и состав тела. Если не хочешь — пропусти, будет базовая фигурка, проанализировать можно позже в Прогрессе.</p>
     <p style="color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5">* Все оценки (вес, жир%, состав тела, калории) приблизительные, не медицинская точность и не врачебная рекомендация. Решения о тренировках, питании и здоровье — на твоей ответственности.</p>
+    <label>⚔ Способ пробуждения</label>
+    <select id="o-awakening-mode">
+      <option value="fast">Быстрый старт — ранг E, уровень 1, без теста</option>
+      <option value="test">Тест пробуждения, 3 дня — покажи свой максимум, получи ранг сразу по способностям</option>
+    </select>
+    <p style="color:var(--muted);font-size:11px;margin-top:4px;line-height:1.5">Если выберешь тест — первые 3 дня Система оценивает твой реальный объём (сколько и как стабильно ты делаешь упражнения) и сразу выдаёт ранг по способностям. Пропуски внутри теста снижают итог — рывок в один день не поможет, важна стабильность все 3 дня.</p>
     <label class="onb-consent" style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer">
       <input type="checkbox" id="o-consent" onchange="document.getElementById('o-awaken-btn').disabled=!this.checked" style="margin-top:3px">
       <span style="font-size:12px;color:var(--muted);line-height:1.4">Я понимаю, что это не медицинское приложение, показатели приблизительные, и согласен(на) стать Игроком на этих условиях</span>
@@ -924,6 +930,25 @@
   let exp=0,lvl=1,need=1000,streak=0,streakBest=0,streakDate=null;
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S'],[100,'SSS']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
+  // ===== Эффективный ранг: повышается не раньше чем раз в месяц, даже если уровень уже выше =====
+  function currentRank(){return (player&&player.effectiveRank)||rankFor(lvl);}
+  function refreshEffectiveRank(){
+    if(!player)return;
+    const natural=rankFor(lvl);
+    if(!player.effectiveRank){player.effectiveRank=natural;player.rankChangedAt=player.rankChangedAt||today();DB.set('player',player);return;}
+    const curIdx=ranks.findIndex(r=>r[1]===player.effectiveRank);
+    const natIdx=ranks.findIndex(r=>r[1]===natural);
+    if(natIdx>curIdx){
+      const last=player.rankChangedAt?new Date(player.rankChangedAt):null;
+      const daysSince=last?Math.floor((Date.now()-last)/86400000):9999;
+      if(daysSince>=30){
+        player.effectiveRank=natural;player.rankChangedAt=today();DB.set('player',player);
+        setTimeout(()=>toast('🎖 Новый ранг: '+natural+'!'),600);
+      }
+    }
+  }
+  function levelForRank(rankName){const e=ranks.find(r=>r[1]===rankName);return e?e[0]:1;}
+  function needForLevel(targetLvl){let n=1000;for(let i=1;i<targetLvl;i++)n=Math.round(n*1.15);return n;}
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
     set(k,v){try{localStorage.setItem('sl_'+k,JSON.stringify(v));return true}catch(e){console.error('DB.set failed for',k,e);if(typeof toast==='function')toast('⚠ Не хватило места в памяти телефона — попробуй фото поменьше');return false}}};
@@ -974,7 +999,7 @@
     catch(e){return {error:String(e)};}
   }
   function cloudState(){
-    return {name:player&&player.name,player,level:lvl,exp,need,rank:rankFor(lvl),streak,streakBest,stats,
+    return {name:player&&player.name,player,level:lvl,exp,need,rank:currentRank(),streak,streakBest,stats,
       habitsCloud:DB.get('habits',null)};
   }
   let pushT;
@@ -1031,8 +1056,8 @@
     document.getElementById('expnum').textContent=exp;
     document.getElementById('expneed').textContent=need;
     document.getElementById('lvl').textContent=lvl;
-    document.getElementById('rankTag').textContent='РАНГ '+rankFor(lvl);
-    if(!(player&&player.avatarUrl))document.getElementById('rankBadge').textContent=rankFor(lvl);
+    document.getElementById('rankTag').textContent='РАНГ '+currentRank();
+    if(!(player&&player.avatarUrl))document.getElementById('rankBadge').textContent=currentRank();
     renderHTitle();
   }
   function daysSinceJoin(){
@@ -1089,9 +1114,43 @@
     }
     const nm=el.querySelector('.qrn').textContent, sp=el.dataset.sphere||'health', q=qlogGet();
     const reps=+el.dataset.reps||0;
-    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;if(reps)addExerciseTotal(nm,reps);}
-    else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);if(reps)addExerciseTotal(nm,-reps);}
+    if(el.classList.contains('done')){if(!q.done.includes(nm))q.done.push(nm);stats[sp]=(stats[sp]||0)+1;if(reps)addExerciseTotal(nm,reps);if(!isExtra)addAwakeningScore(reps||1);}
+    else{q.done=q.done.filter(x=>x!==nm);stats[sp]=Math.max(0,(stats[sp]||0)-1);if(reps)addExerciseTotal(nm,-reps);if(!isExtra)addAwakeningScore(-(reps||1));}
     saveStats();renderStats();qlogSet(q);saveProgress();render();checkStreak();renderAch('progAch');renderAch('profAch');
+  }
+  // во время 3-дневного теста пробуждения копим объём по дням — на нём считается стартовый ранг
+  function addAwakeningScore(delta){
+    if(!player||player.awakeningMode!=='test'||player.awakeningDone)return;
+    const d=today();
+    player.awakeningDays=player.awakeningDays||[];
+    let day=player.awakeningDays.find(x=>x.date===d);
+    if(!day){day={date:d,score:0};player.awakeningDays.push(day);}
+    day.score=Math.max(0,day.score+delta);
+    DB.set('player',player);
+  }
+  // плейсхолдер-шкала — заменю на реальную (КМС/МС/МСМК), когда придёт таблица разрядов
+  function checkAwakeningFinalize(){
+    if(!player||player.awakeningMode!=='test'||player.awakeningDone)return;
+    const start=new Date(player.awakeningStart);
+    const daysSince=Math.floor((Date.now()-start)/86400000);
+    if(daysSince<3)return;
+    const days=player.awakeningDays||[];
+    const activeDays=days.filter(d=>d.score>0).length;
+    const totalScore=days.reduce((s,d)=>s+d.score,0);
+    const consistency=activeDays/3;
+    const effectiveScore=Math.round(totalScore*consistency);
+    let rank='E';
+    if(effectiveScore>=3000)rank='SSS';
+    else if(effectiveScore>=1500)rank='S';
+    else if(effectiveScore>=800)rank='A';
+    else if(effectiveScore>=400)rank='B';
+    else if(effectiveScore>=150)rank='C';
+    else if(effectiveScore>=50)rank='D';
+    const targetLvl=levelForRank(rank);
+    lvl=targetLvl;need=needForLevel(targetLvl);exp=0;saveProgress();
+    player.effectiveRank=rank;player.rankChangedAt=today();player.awakeningDone=true;DB.set('player',player);
+    renderStats();render();
+    setTimeout(()=>toast('⚔ Пробуждение завершено! Твой ранг: '+rank+' (объём '+totalScore+', стабильность '+Math.round(consistency*100)+'%)'),700);
   }
   // если основной квест выполнен на 100% — допы, отмеченные ДО этого момента, до-получают полную ставку
   function upgradeExtrasToFullXp(){
@@ -1379,7 +1438,7 @@
     const el=document.getElementById('profAva');
     if(el){if(url)el.innerHTML='<img src="'+url+'" alt="avatar">';else el.textContent=(player&&player.name||'Игрок')[0].toUpperCase();}
     const rb=document.getElementById('rankBadge');
-    if(rb){if(url)rb.innerHTML='<img src="'+url+'" alt="avatar">';else rb.textContent=rankFor(lvl);}
+    if(rb){if(url)rb.innerHTML='<img src="'+url+'" alt="avatar">';else rb.textContent=currentRank();}
   }
   let bodyPhotos={front:null,side:null,back:null};
   function onBodyPhotoSelected(angle,ev,isOnboarding){
@@ -1501,8 +1560,12 @@
     const NEW_DAY_BUFFER=2*3600;
     const startsNextDay=secsUntilMidnight()<NEW_DAY_BUFFER;
     if(startsNextDay)secs=secsUntilMidnight()+86400;
+    const awakeningMode=document.getElementById('o-awakening-mode').value;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
-      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today()};
+      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today(),
+      awakeningMode,effectiveRank:'E',rankChangedAt:today()};
+    if(awakeningMode==='test'){player.awakeningStart=today();player.awakeningDays=[];player.awakeningDone=false;}
+    else player.awakeningDone=true;
     if(avatarThumb)player.avatarUrl=avatarThumb; // сжатое фото — безопасно для localStorage, держится сразу даже если ИИ-стилизация не сработает
     DB.set('player',player);
     // новый игрок начинает с нуля
@@ -1526,6 +1589,8 @@
   function applyPlayer(){
     if(!player)return;
     if(!player.joinedAt){player.joinedAt=today();DB.set('player',player);}
+    refreshEffectiveRank();
+    checkAwakeningFinalize();
     wGoal=player.wGoal||1900;
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
@@ -2147,7 +2212,7 @@
     const name=player&&player.name||'ИГРОК';
     applyAvatar();
     document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
-    document.getElementById('profSub').textContent='Ранг '+rankFor(lvl)+' · Уровень '+lvl;
+    document.getElementById('profSub').textContent='Ранг '+currentRank()+' · Уровень '+lvl;
     document.getElementById('profLvl').textContent=lvl;
     document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
     document.getElementById('profExpNum').textContent=exp;
