@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-34';
+  var APP_VERSION='2026-06-23-35';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -196,12 +196,13 @@
   .chart .bar{flex:1;background:linear-gradient(180deg,var(--cyan),var(--blue));border-radius:4px 4px 0 0;box-shadow:0 0 10px rgba(70,215,255,.4);min-height:6px;transition:height .5s}
   .chart-x{display:flex;gap:6px;font-size:10px;color:var(--muted);font-family:"Exo 2"}
   .chart-x span{flex:1;text-align:center}
-  .bodyfig{text-align:center;margin-bottom:14px;position:relative}
+  .bodyfig{text-align:center;margin-bottom:14px}
+  .bodyfig-row{display:flex;align-items:center;justify-content:center;gap:16px}
   .silh{font-size:90px;line-height:1;filter:drop-shadow(0 0 18px rgba(70,215,255,.4));display:flex;align-items:center;justify-content:center}
-  .silh.has-photo{width:180px;height:240px;margin:0 auto;border-radius:16px;border:1px solid var(--violet);overflow:hidden;box-shadow:0 0 28px rgba(155,107,255,.45);filter:none}
-  .bbadges{position:absolute;top:0;left:50%;transform:translateX(-50%);width:180px;height:240px;pointer-events:none}
-  .bbadge{position:absolute;left:50%;transform:translateX(-50%);background:#fff;color:#0b0b0f;font-family:"Exo 2";font-weight:800;font-size:15px;padding:6px 16px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.3);white-space:nowrap}
-  .bbadge.status{font-size:12px;padding:5px 14px;color:#04101f;background:var(--ok)}
+  .silh.has-photo{width:160px;height:220px;flex:none;border-radius:16px;border:1px solid var(--violet);overflow:hidden;box-shadow:0 0 28px rgba(155,107,255,.45);filter:none;background:radial-gradient(circle at 50% 30%,rgba(155,107,255,.18),transparent 70%),var(--panel)}
+  .bbadges{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .bbadge{background:#fff;color:#0b0b0f;font-family:"Exo 2";font-weight:800;font-size:14px;padding:6px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.3);white-space:nowrap}
+  .bbadge.status{font-size:11px;padding:5px 12px;color:#04101f;background:var(--ok)}
   .bbadge.status.over{background:var(--danger);color:#fff}
   .bbadge.status.low{background:var(--cyan-soft);color:#04101f}
   .bphoto{margin-top:8px;padding:10px 16px;border:1px solid var(--line-strong);border-radius:10px;background:rgba(43,107,255,.16);color:var(--cyan-soft);font-family:"Rajdhani";font-weight:600;font-size:13px;cursor:pointer}
@@ -471,6 +472,7 @@
         <div class="stat"><div class="k">❤️ ЗДОРОВЬЕ</div><div class="v" id="st-health">0</div></div>
         <div class="stat"><div class="k">🧠 ИНТЕЛЛЕКТ</div><div class="v" id="st-intellect">0</div></div>
         <div class="stat"><div class="k">🕯️ ДУХ ВОЛИ</div><div class="v" id="st-will">0</div></div>
+        <div class="stat"><div class="k">🏃 ВЫНОСЛИВОСТЬ</div><div class="v" id="st-endurance">0</div></div>
       </div>
     </div>
     <div class="window qinfo">
@@ -568,8 +570,10 @@
     <div class="window">
       <div class="sec-title">Анализ состава тела <span style="color:var(--muted);font-size:11px" id="bmDate">нет данных</span></div>
       <div class="bodyfig">
-        <div class="silh" id="silh">🧍</div>
-        <div class="bbadges" id="bbadges"></div>
+        <div class="bodyfig-row">
+          <div class="silh" id="silh">🧍</div>
+          <div class="bbadges" id="bbadges"></div>
+        </div>
         <button class="bphoto" onclick="openBodyPhotoModal()">📷 Анализ по фото тела</button>
       </div>
       <div class="improw">
@@ -885,6 +889,7 @@
         <div class="stat"><div class="k">❤️ ЗДОРОВЬЕ</div><div class="v" id="pr-health">0</div></div>
         <div class="stat"><div class="k">🧠 ИНТЕЛЛЕКТ</div><div class="v" id="pr-intellect">0</div></div>
         <div class="stat"><div class="k">🕯️ ДУХ ВОЛИ</div><div class="v" id="pr-will">0</div></div>
+        <div class="stat"><div class="k">🏃 ВЫНОСЛИВОСТЬ</div><div class="v" id="pr-endurance">0</div></div>
       </div>
     </div>
     <div class="window">
@@ -949,12 +954,12 @@
   }
   function qlogGet(){let q=DB.get('qlog',{date:today(),done:[]});if(q.date!==today())q={date:today(),done:[]};return q;}
   function qlogSet(q){q.date=today();DB.set('qlog',q);}
-  let stats=DB.get('stats',{strength:0,agility:0,health:0,intellect:0,will:0});
+  let stats=DB.get('stats',{strength:0,agility:0,health:0,intellect:0,will:0,endurance:0});
   function saveStats(){DB.set('stats',stats);cloudPush();}
   function renderStats(){
-    ['strength','agility','health','intellect','will'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
+    ['strength','agility','health','intellect','will','endurance'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
   }
-  const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🏃 Выносливость':'health','🧠 Интеллект':'intellect','❤️ Здоровье':'health','🕯️ Дух Воли':'will'};
+  const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🏃 Выносливость':'endurance','🧠 Интеллект':'intellect','❤️ Здоровье':'health','🕯️ Дух Воли':'will'};
   // ===== Облако (Supabase edge function) =====
   const CLOUD='https://omiomgwwjuudjqjdggdk.supabase.co/functions/v1/sync';
   const CLOUD_KEY='sb_publishable_6HlVMfE2_FxG4uARa5irXw_OrcquxBw';
@@ -977,7 +982,7 @@
   function hydrate(s){
     if(!s)return;player=s.player||{name:s.name};DB.set('player',player);
     exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
-    stats=s.stats||{strength:0,agility:0,health:0,intellect:0,will:0};
+    stats=s.stats||{strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};
     DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
     if(s.habitsCloud&&!DB.get('habits',null)){habits=s.habitsCloud;DB.set('habits',habits);}
     applyPlayer();document.getElementById('onb').classList.add('hide');
@@ -1502,7 +1507,7 @@
     DB.set('player',player);
     // новый игрок начинает с нуля
     exp=0;lvl=1;need=1000;saveProgress();
-    stats={strength:0,agility:0,health:0,intellect:0,will:0};saveStats();renderStats();
+    stats={strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};saveStats();renderStats();
     DB.set('progress',{exp,lvl,need,streak:0,streakBest:0,streakDate:null});streak=0;
     logWeightEntry(w); // вес сразу виден в Системе и Прогрессе, не дожидаясь анализа фото
     applyPlayer();
@@ -1546,15 +1551,15 @@
     const bm=bodyMetrics;
     if(!silh||!silh.classList.contains('has-photo')||!bm){box.innerHTML='';return;}
     let html='';
-    if(bm.weight)html+='<div class="bbadge" style="top:18%">'+bm.weight+' кг</div>';
+    if(bm.weight)html+='<div class="bbadge">'+bm.weight+' кг</div>';
     if(bm.fat!=null){
-      html+='<div class="bbadge" style="top:46%">'+bm.fat+' %</div>';
+      html+='<div class="bbadge">'+bm.fat+' %</div>';
       const male=player&&player.sex==='Мужской';
       const v=+bm.fat;
       const lowMax=male?6:14, okMax=male?18:25;
       const label=v<lowMax?'Очень мало':v<okMax?'Норма':'Выше нормы';
       const cls=v<lowMax?'low':v<okMax?'ok':'over';
-      html+='<div class="bbadge status '+cls+'" style="top:66%">'+label+'</div>';
+      html+='<div class="bbadge status '+cls+'">'+label+'</div>';
     }
     box.innerHTML=html;
   }
@@ -2104,6 +2109,7 @@
         {em:'🧠',n:'Интеллект',req:'Интеллект ≥ 20',reward:'Открывает значок в коллекции',un:stats.intellect>=20},
         {em:'❤️',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'Открывает значок в коллекции',un:stats.health>=20},
         {em:'🕯️',n:'Волевой',req:'Дух воли ≥ 20',reward:'Открывает значок в коллекции',un:stats.will>=20},
+        {em:'🏃',n:'Выносливый',req:'Выносливость ≥ 20',reward:'Открывает значок в коллекции',un:stats.endurance>=20},
       ]},
       {title:'Без привычки',items:[
         {em:'🚫',n:'7 без привычки',req:'7 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=7},
@@ -2146,7 +2152,7 @@
     document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
     document.getElementById('profExpNum').textContent=exp;
     document.getElementById('profExpNeed').textContent=need;
-    ['strength','agility','health','intellect','will'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
+    ['strength','agility','health','intellect','will','endurance'].forEach(s=>{const el=document.getElementById('pr-'+s);if(el)el.textContent=stats[s]||0;});
     document.getElementById('profStreak').textContent='🔥 '+streak+(streak===1?' ДЕНЬ':streak>=2&&streak<=4?' ДНЯ':' ДНЕЙ')+' ПОДРЯД';
     document.getElementById('profRecTxt').textContent='рекорд: '+streakBest;
     renderAch('profAch');
