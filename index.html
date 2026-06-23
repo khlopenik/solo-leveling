@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-20';
+  var APP_VERSION='2026-06-23-21';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1855,7 +1855,7 @@
     return items;
   }
   function getAchGroups(){
-    const habitDays=habit?Math.max(0,Math.floor((Date.now()-new Date(habit.startDate))/86400000)):0;
+    const habitDays=habits&&habits.length?Math.max(...habits.map(h=>Math.max(0,Math.floor((Date.now()-new Date(h.startDate))/86400000)))):0;
     const pos=myRankPos;
     return [
       {title:'Достижения',items:[
