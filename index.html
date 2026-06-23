@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-22';
+  var APP_VERSION='2026-06-23-23';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -393,7 +393,7 @@
     <label>Дата рождения — месяц</label><select id="o-dob-m" onchange="syncDob()"></select>
     <label>Дата рождения — год</label><select id="o-dob-y" onchange="syncDob()"></select>
     <input type="hidden" id="o-dob">
-    <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option>Женский</option><option>Мужской</option></select>
+    <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option value="" selected disabled>Выбрать</option><option>Мужской</option><option>Женский</option></select>
     <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
     <label>Цель</label><select id="o-goal" onchange="updateKBJUPreview()"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
     <label>Уровень активности</label><select id="o-act" onchange="updateKBJUPreview()"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
@@ -1368,8 +1368,9 @@
     let age=null;
     if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;
       if(d.getMonth()===t.getMonth()&&d.getDate()===t.getDate())setTimeout(()=>toast('🎂 С днём рождения! +500 XP буст'),900);}
-    wGoal=Math.round(w*30/50)*50;
     const sex=document.getElementById('o-sex').value;
+    if(!sex){toast('⚠ Выбери пол');return;}
+    wGoal=Math.round(w*30/50)*50;
     // если до полуночи остаётся меньше 2 часов — первый день квеста не урезаем,
     // а считаем его с завтрашней даты (полные 24 часа на сборку квеста)
     const NEW_DAY_BUFFER=2*3600;
