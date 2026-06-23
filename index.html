@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-27';
+  var APP_VERSION='2026-06-23-28';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1239,8 +1239,9 @@
     }catch(e){toast('Не получилось перерисовать в аниме-стиле — оставила твою фотку');}
     avatarPhoto=null;
   }
-  async function generateBodyFigure(photoB64,sex,fat){
+  async function generateBodyFigure(photoB64,sex,fat,showStatus){
     if(!photoB64)return;
+    const st=showStatus?document.getElementById('bp-figure-status'):null;
     try{
       const r=await fetch(BODY_FIGURE_AI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:photoB64,uid:getUid(),sex,fat})});
       const res=await r.json();
@@ -1248,7 +1249,12 @@
       player.bodyFigureUrl=res.url;DB.set('player',player);
       applySilhouette();cloudPush();
       toast('✓ Фигура тела готова');
-    }catch(e){/* тихо — на экране уже есть реальное фото */}
+      const stNow=showStatus?document.getElementById('bp-figure-status'):null;
+      if(stNow)stNow.innerHTML='<span style="color:var(--ok)">✓ Фигура готова — можешь закрывать окно</span>';
+    }catch(e){
+      const stNow=showStatus?document.getElementById('bp-figure-status'):null;
+      if(stNow)stNow.innerHTML='Фигура не дорисовалась, но фото и % уже сохранены — можешь закрывать окно';
+    }
   }
   function renamePlayer(){
     if(!player)return;
@@ -1314,13 +1320,14 @@
         DB.set('bodyPhoto',shownPhoto);
         if(player){player.bodyFigureUrl=null;DB.set('player',player);} // сбрасываем старую фигуру — генерируем новую под актуальное фото
         applySilhouette();
-        generateBodyFigure(shownPhoto,sex,bm.fat); // в фоне — не блокирует интерфейс
+        generateBodyFigure(shownPhoto,sex,bm.fat,true); // в фоне — не блокирует интерфейс
       }
       if(bm.weight)logWeightEntry(bm.weight,bm.fat);
       renderBodyMetrics(bm);
       if(targetResEl)targetResEl.innerHTML='<div class="rcard"><div class="rname">Готово</div>'+
         '<div class="rm"><span>Жир <b>'+(res.fat||'—')+'%</b></span><span>Мышцы <b>'+(res.muscle||'—')+'кг</b></span></div>'+
-        '<div class="rnote">'+(res.note||'Оценка ИИ по фото, приблизительная.')+'</div></div>';
+        '<div class="rnote">'+(res.note||'Оценка ИИ по фото, приблизительная.')+'</div></div>'+
+        (shownPhoto?'<div id="bp-figure-status" style="margin-top:8px;text-align:center;color:var(--cyan);font-size:12px">⚡ Дорисовываю твою фигуру в 3D…</div>':'');
       toast('✓ Состав тела обновлён');
       bodyPhotos={front:null,side:null,back:null};
     }catch(e){
