@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-42';
+  var APP_VERSION='2026-06-23-43';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -247,7 +247,8 @@
   .ach-prev-more{aspect-ratio:1;border:1px dashed var(--line-strong);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-weight:700;font-size:15px;color:var(--cyan-soft);background:rgba(43,107,255,.08)}
   .ach-prev-count{margin-top:8px;text-align:center;font-size:11px;color:var(--muted);letter-spacing:.5px}
   .ach-full{max-height:74vh;overflow-y:auto;padding-right:4px}
-  .achcard{width:94%;max-width:440px}
+  .achcard{width:94%;max-width:440px;position:relative}
+  .ach-x{position:sticky;top:-6px;float:right;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,92,122,.18);border:1px solid rgba(255,92,122,.5);color:#ffb3c2;font-size:16px;cursor:pointer;z-index:5;margin:-6px -6px 0 0}
   .ach-summary{margin:6px 0 4px;text-align:center}
   .ach-summary .ach-sum-num{font-family:"Exo 2";font-weight:900;font-size:26px;color:var(--gold);text-shadow:0 0 16px rgba(255,214,107,.5)}
   .ach-summary .ach-sum-lbl{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
@@ -824,6 +825,7 @@
 </div>
 <div class="modal" id="achmodal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="pcard achcard" style="text-align:left;max-height:90vh;overflow-y:auto">
+    <div class="ach-x" onclick="document.getElementById('achmodal').classList.remove('show')">✕</div>
     <div class="pn" style="text-align:center">🏆 Зал достижений</div>
     <div class="ach-summary" id="achSummary"></div>
     <div class="ach-full" id="achFull"></div>
@@ -920,8 +922,8 @@
       <div class="streak" id="profStreak">🔥 0 ДНЕЙ ПОДРЯД</div>
     </div>
     <div class="window">
-      <div class="sec-title">Достижения</div>
-      <div class="ach" id="profAch"></div>
+      <div class="sec-title" style="cursor:pointer" onclick="openAchModal()">Достижения <span style="color:var(--cyan-soft);font-size:11px;margin-left:auto">⤢ все</span></div>
+      <div class="ach ach-preview" id="profAch"></div>
     </div>
   </div>
 </div>
