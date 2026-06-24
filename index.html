@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-40';
+  var APP_VERSION='2026-06-23-41';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1012,7 +1012,7 @@
     catch(e){return {error:String(e)};}
   }
   function cloudState(){
-    return {name:player&&player.name,player,level:lvl,exp,need,rank:currentRank(),streak,streakBest,stats,
+    return {name:player&&player.name,player,level:lvl,exp,need,rank:currentRank(),streak,streakBest,streakDate,stats,
       habitsCloud:DB.get('habits',null),weightLogCloud:DB.get('weightLog',[]),bodyMetricsCloud:DB.get('bodyMetrics',null)};
   }
   let pushT;
@@ -1020,8 +1020,12 @@
   function hydrate(s){
     if(!s)return;player=s.player||{name:s.name};DB.set('player',player);
     exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
+    // дату последнего зачтённого дня берём из облака (если есть), иначе из локального прогресса — иначе серия слетает на новом устройстве
+    streakDate=s.streakDate||DB.get('progress',{}).streakDate||null;
+    // если последний зачтённый день не сегодня и не вчера — серия прервана, обнуляем
+    if(streakDate&&streakDate!==today()&&streakDate!==yesterday()){streak=0;streakDate=null;}
     stats=s.stats||{strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};
-    DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate:DB.get('progress',{}).streakDate||null});DB.set('stats',stats);
+    DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});DB.set('stats',stats);
     if(s.habitsCloud&&!DB.get('habits',null)){habits=s.habitsCloud;DB.set('habits',habits);}
     // история веса: объединяем локальную и облачную по дате (одна запись на день), чтобы ничего не терялось между сессиями/устройствами
     if(Array.isArray(s.weightLogCloud)&&s.weightLogCloud.length){
