@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-41';
+  var APP_VERSION='2026-06-23-42';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -242,6 +242,10 @@
   .ach-gt-count{flex:none;font-size:10px;color:var(--gold);letter-spacing:1px;background:rgba(255,214,107,.12);padding:2px 8px;border-radius:10px}
   .ach-preview{max-height:118px;overflow:hidden;position:relative}
   .ach-preview .ach-group-title{display:none}
+  .ach-prev-wrap{cursor:pointer}
+  .ach-prev-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:4px}
+  .ach-prev-more{aspect-ratio:1;border:1px dashed var(--line-strong);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:"Exo 2";font-weight:700;font-size:15px;color:var(--cyan-soft);background:rgba(43,107,255,.08)}
+  .ach-prev-count{margin-top:8px;text-align:center;font-size:11px;color:var(--muted);letter-spacing:.5px}
   .ach-full{max-height:74vh;overflow-y:auto;padding-right:4px}
   .achcard{width:94%;max-width:440px}
   .ach-summary{margin:6px 0 4px;text-align:center}
@@ -2231,6 +2235,20 @@
   function renderAch(elId,full){
     const el=document.getElementById(elId);if(!el)return;
     const groups=getAchGroups();
+    if(!full){
+      // компактное превью: счётчик + ровный ряд (полученные первыми); полный список — по кнопке «ВСЕ»
+      let total=0,got=0,all=[];
+      groups.forEach(g=>g.items.forEach(a=>{total++;if(a.un)got++;all.push(a);}));
+      const show=[...all].sort((a,b)=>(b.un?1:0)-(a.un?1:0)).slice(0,5);
+      el.classList.remove('ach-preview');el.classList.remove('ach');
+      el.innerHTML='<div class="ach-prev-wrap" onclick="openAchModal()">'+
+        '<div class="ach-prev-row">'+show.map(a=>renderBadgeSimple(a)).join('')+
+          '<div class="ach-prev-more">+'+Math.max(0,total-5)+'</div>'+
+        '</div>'+
+        '<div class="ach-prev-count">Получено '+got+' из '+total+' · нажми, чтобы открыть все</div>'+
+      '</div>';
+      return;
+    }
     if(full){
       // сводка сверху: сколько всего получено
       let total=0,got=0;
