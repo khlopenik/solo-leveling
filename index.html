@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-52';
+  var APP_VERSION='2026-06-23-53';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -798,12 +798,12 @@
   <div class="pcard" style="text-align:left">
     <div class="pn" style="text-align:center;margin-bottom:4px">🔒 Приватность</div>
     <div class="pr" style="text-align:center;margin-bottom:14px">Что показывать другим игрокам</div>
-    <div class="priv-row"><span class="pl">Участвовать в общем рейтинге</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="priv-row"><span class="pl">Показывать мой профиль</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="priv-row"><span class="pl">Показывать прокачку (уровень, статы)</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="priv-row"><span class="pl">Показывать вес и состав тела</span><div class="sw" onclick="this.classList.toggle('on')"></div></div>
-    <div class="priv-row"><span class="pl">Показывать меня в ленте достижений</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="pclose" style="text-align:center" onclick="document.getElementById('privmodal').classList.remove('show');toast('✓ Настройки приватности сохранены')">сохранить</div>
+    <div class="priv-row"><span class="pl">Участвовать в общем рейтинге</span><div class="sw on" id="priv-pubRating" onclick="this.classList.toggle('on')"></div></div>
+    <div class="priv-row"><span class="pl">Показывать мой профиль</span><div class="sw on" id="priv-showProfile" onclick="this.classList.toggle('on')"></div></div>
+    <div class="priv-row"><span class="pl">Показывать прокачку (уровень, статы)</span><div class="sw on" id="priv-showStats" onclick="this.classList.toggle('on')"></div></div>
+    <div class="priv-row"><span class="pl">Показывать вес и состав тела <small style="color:var(--muted)">(скоро)</small></span><div class="sw" id="priv-showBody" onclick="this.classList.toggle('on')"></div></div>
+    <div class="priv-row"><span class="pl">Показывать меня в ленте достижений <small style="color:var(--muted)">(скоро)</small></span><div class="sw on" id="priv-showFeed" onclick="this.classList.toggle('on')"></div></div>
+    <div class="pclose" style="text-align:center" onclick="savePrivacy()">сохранить</div>
   </div>
 </div>
 <div class="modal" id="modal" onclick="if(event.target===this)closeProf()">
@@ -1430,7 +1430,20 @@
     document.getElementById('modal').classList.add('show');
   }
   function closeProf(){document.getElementById('modal').classList.remove('show');}
-  function openPriv(){document.getElementById('privmodal').classList.add('show');}
+  function openPriv(){
+    const p=(player&&player.privacy)||{};
+    const set=(id,def)=>document.getElementById(id).classList.toggle('on',p[id.slice(5)]!==undefined?p[id.slice(5)]:def);
+    set('priv-pubRating',true);set('priv-showProfile',true);set('priv-showStats',true);set('priv-showBody',false);set('priv-showFeed',true);
+    document.getElementById('privmodal').classList.add('show');
+  }
+  function savePrivacy(){
+    if(!player)return;
+    const get=id=>document.getElementById(id).classList.contains('on');
+    player.privacy={pubRating:get('priv-pubRating'),showProfile:get('priv-showProfile'),showStats:get('priv-showStats'),showBody:get('priv-showBody'),showFeed:get('priv-showFeed')};
+    DB.set('player',player);cloudPush();
+    document.getElementById('privmodal').classList.remove('show');
+    toast('✓ Настройки приватности сохранены');
+  }
   function openSettings(){document.getElementById('setmodal').classList.add('show');}
   function openLinkModal(){
     document.getElementById('setmodal').classList.remove('show');
@@ -2585,10 +2598,19 @@
     else if(res.friendStatus==='pending_sent')actionsHtml='<div style="color:var(--muted);font-size:13px;margin-top:10px">Заявка отправлена, ждём ответа</div>';
     else if(res.friendStatus==='pending_received')actionsHtml='<button class="enter" style="margin-top:10px" onclick="respondFriendFromProfile(\''+targetUid+'\',true)">✓ Принять заявку в друзья</button>';
     else actionsHtml='<button class="enter" style="margin-top:10px" onclick="sendFriendRequest(\''+targetUid+'\')">＋ Добавить в друзья</button>';
+    if(res.hidden){
+      box.innerHTML='<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;background:rgba(43,107,255,.16);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--cyan);overflow:hidden">'+ava+'</div>'+
+        '<div class="pn">'+(p.name||'Игрок')+'</div>'+
+        '<div class="pr" style="color:var(--muted)">🔒 Профиль скрыт настройками приватности</div>'+
+        actionsHtml;
+      return;
+    }
+    const statsHtml=(p.level!=null)?('<div class="pr">Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+' · '+(p.exp||0)+' EXP</div>'+
+      '<div class="pr" style="color:var(--muted);font-size:12px">🔥 серия: '+(p.streak||0)+' дней (рекорд '+(p.streak_best||0)+')</div>')
+      :'<div class="pr" style="color:var(--muted);font-size:12px">Ранг '+(p.rank||'E')+' · прокачка скрыта</div>';
     box.innerHTML='<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;background:rgba(43,107,255,.16);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--cyan);overflow:hidden">'+ava+'</div>'+
       '<div class="pn">'+(p.name||'Игрок')+'</div>'+
-      '<div class="pr">Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+' · '+(p.exp||0)+' EXP</div>'+
-      '<div class="pr" style="color:var(--muted);font-size:12px">🔥 серия: '+(p.streak||0)+' дней (рекорд '+(p.streak_best||0)+')</div>'+
+      statsHtml+
       actionsHtml+
       (targetUid===getUid()?'':(res.friendStatus==='friends'
         ?'<button class="poke" style="width:100%;margin-top:10px" onclick="document.getElementById(\'playerprofmodal\').classList.remove(\'show\');openChat(\''+targetUid+'\',\''+(p.name||'Игрок').replace(/'/g,"\\'")+'\',\''+(p.avatar_url||'')+'\')">✉ Написать</button>'
