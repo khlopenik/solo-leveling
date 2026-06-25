@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-49';
+  var APP_VERSION='2026-06-23-50';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -84,6 +84,7 @@
   .rank-tag{color:var(--gold);font-size:12px;letter-spacing:3px;font-family:"Exo 2";font-weight:700;text-shadow:0 0 10px rgba(255,214,107,.6);margin-bottom:8px}
   .hname{font-size:18px;letter-spacing:2px;font-weight:700}
   .htitle{color:var(--muted);font-size:13px;margin-top:2px;letter-spacing:1px}
+  .prof-tag{display:inline-block;margin-top:6px;padding:4px 14px;border-radius:20px;font-family:"Exo 2";font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--violet);background:rgba(155,107,255,.14);border:1px solid rgba(155,107,255,.4);text-shadow:0 0 8px rgba(155,107,255,.5)}
   .level-row{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:12px 0 6px}
   .level-row .lv{color:var(--muted);font-size:12px;letter-spacing:3px;font-family:"Exo 2"}
   .level-row .num{font-family:"Exo 2";font-size:42px;font-weight:900;color:#fff;text-shadow:0 0 18px rgba(70,215,255,.9)}
@@ -495,6 +496,7 @@
         <div class="rank-tag" id="rankTag">РАНГ E</div>
         <div class="hname">ИГРОК · ЛЮБОВЬ</div>
         <div class="htitle" id="htitle">Пробуждённая · день 12</div>
+        <div class="prof-tag hide" id="profTag"></div>
         <div class="level-row"><span class="lv">LEVEL</span><span class="num" id="lvl">7</span></div>
         <div class="expbar"><div class="expfill" id="exp"></div></div>
         <div class="exptext"><span id="expnum">620</span> / <span id="expneed">1000</span> EXP</div>
@@ -1034,6 +1036,7 @@
   function saveStats(){DB.set('stats',stats);cloudPush();}
   function renderStats(){
     ['strength','agility','health','intellect','will','endurance'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
+    renderProfession();
   }
   const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🏃 Выносливость':'endurance','🧠 Интеллект':'intellect','❤️ Здоровье':'health','🕯️ Дух Воли':'will'};
   // ===== Облако (Supabase edge function) =====
@@ -1157,6 +1160,42 @@
     const el=document.getElementById('htitle');if(!el)return;
     const m=player&&player.sex==='Мужской';
     el.textContent=(m?'Пробуждённый':'Пробуждённая')+' · день '+daysSinceJoin();
+  }
+  // ===== ПРОФЕССИИ — разблокируются на 20/45/80 уровне по доминирующей характеристике =====
+  const PROFESSIONS={
+    strength:['⚔','Воин','Берсерк','Монарх Разрушения'],
+    agility:['🗡','Разведчик','Убийца Теней','Клинок Бездны'],
+    health:['🛡','Страж','Паладин','Несокрушимый Защитник'],
+    intellect:['📖','Ученик','Тактик','Архимаг Разума'],
+    will:['🕯','Аскет','Монах','Несгибаемый Дух'],
+    endurance:['🏃','Бегун','Марафонец','Безграничная Выносливость'],
+  };
+  const PROFESSION_LEVELS=[20,45,80];
+  function currentProfession(){
+    const keys=Object.keys(PROFESSIONS);
+    let domKey=keys[0],domVal=-1;
+    keys.forEach(k=>{const v=stats[k]||0;if(v>domVal){domVal=v;domKey=k;}});
+    if(domVal<=0)return null;
+    let tier=-1;
+    PROFESSION_LEVELS.forEach((lv,i)=>{if(lvl>=lv)tier=i;});
+    if(tier<0)return null;
+    const [icon,...names]=PROFESSIONS[domKey];
+    return {stat:domKey,icon,name:names[tier],tier};
+  }
+  function renderProfession(){
+    const el=document.getElementById('profTag');if(!el)return;
+    const p=currentProfession();
+    if(!p){el.classList.add('hide');return;}
+    el.textContent=p.icon+' '+p.name.toUpperCase();
+    el.classList.remove('hide');
+    if(player){
+      const key=p.stat+':'+p.tier;
+      if(player.lastProfessionKey!==key){
+        const isFirst=player.lastProfessionKey==null;
+        player.lastProfessionKey=key;DB.set('player',player);
+        if(!isFirst)setTimeout(()=>toast('⚜ Новая профессия: '+p.name+'!'),700);
+      }
+    }
   }
   // бонус за серию без пропусков — применяется к ЛЮБОМУ заработанному XP за день
   // ===== ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ — раз-два в неделю, час на выполнение, бонусный XP =====
@@ -1780,6 +1819,7 @@
     applySilhouette();
     applyAvatar();
     renderHTitle();
+    renderProfession();
     normCal=calcNormCal(player);
     normMacros=calcNormMacros(normCal,player);
     renderWater();render();renderNutrition();
@@ -2460,7 +2500,8 @@
     const name=player&&player.name||'ИГРОК';
     applyAvatar();
     document.getElementById('profName').textContent='ИГРОК · '+name.toUpperCase();
-    document.getElementById('profSub').textContent='Ранг '+currentRank()+' · Уровень '+lvl;
+    const prof=currentProfession();
+    document.getElementById('profSub').textContent='Ранг '+currentRank()+' · Уровень '+lvl+(prof?' · '+prof.icon+' '+prof.name:'');
     document.getElementById('profLvl').textContent=lvl;
     document.getElementById('profExp').style.width=Math.min(100,exp/need*100)+'%';
     document.getElementById('profExpNum').textContent=exp;
