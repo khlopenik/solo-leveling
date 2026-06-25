@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-46';
+  var APP_VERSION='2026-06-23-47';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -121,6 +121,12 @@
   .qi-sub{text-align:center;color:var(--text);font-size:14px;margin-bottom:4px}
   .qi-sub b{color:var(--danger)}
   .qi-timer{text-align:center;color:var(--muted);font-size:12px;margin-bottom:12px;font-family:"Exo 2"}
+  .surprise{border-color:rgba(255,214,107,.55)!important;background:linear-gradient(160deg,rgba(255,214,107,.1),var(--panel))!important;box-shadow:0 0 26px rgba(255,214,107,.25),inset 0 0 24px rgba(255,214,107,.08)!important;animation:surpriseGlow 1.8s ease-in-out infinite}
+  @keyframes surpriseGlow{0%,100%{box-shadow:0 0 16px rgba(255,214,107,.2),inset 0 0 16px rgba(255,214,107,.06)}50%{box-shadow:0 0 30px rgba(255,214,107,.4),inset 0 0 26px rgba(255,214,107,.14)}}
+  .surprise-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:"Exo 2";font-weight:700;font-size:12px;letter-spacing:1px;color:var(--gold);margin-bottom:8px;flex-wrap:wrap}
+  .surprise-timer{font-family:"Exo 2";font-size:14px;color:#fff;background:rgba(0,0,0,.35);padding:3px 10px;border-radius:8px;flex:none}
+  .surprise-name{text-align:center;font-size:18px;font-weight:700;color:#fff;margin:6px 0}
+  .surprise-sub{text-align:center;color:var(--muted);font-size:12px;line-height:1.4}
   .qi-div{height:1px;background:linear-gradient(90deg,transparent,var(--line-strong),transparent);margin:12px 0}
   .qi-goals{text-align:center;font-family:"Exo 2";font-weight:700;letter-spacing:3px;font-size:15px;color:#fff;margin-bottom:14px}
   .qrow{display:flex;align-items:center;gap:12px;padding:11px 4px;cursor:pointer;user-select:none;transition:.15s}
@@ -500,6 +506,12 @@
         <div class="stat"><div class="k">🕯️ ДУХ ВОЛИ</div><div class="v" id="st-will">0</div></div>
         <div class="stat"><div class="k">🏃 ВЫНОСЛИВОСТЬ</div><div class="v" id="st-endurance">0</div></div>
       </div>
+    </div>
+    <div class="window surprise hide" id="surpriseCard">
+      <div class="surprise-head">⚡ ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ <span class="surprise-timer" id="surpriseTimer">60:00</span></div>
+      <div class="surprise-name" id="surpriseName">—</div>
+      <div class="surprise-sub">Успей выполнить, пока не истёк срок — за это даётся бонусный XP</div>
+      <button class="enter" style="margin-top:10px" onclick="completeSurpriseQuest()">✓ Выполнил!</button>
     </div>
     <div class="window qinfo">
       <div class="qi-head">
@@ -1133,6 +1145,64 @@
     el.textContent=(m?'Пробуждённый':'Пробуждённая')+' · день '+daysSinceJoin();
   }
   // бонус за серию без пропусков — применяется к ЛЮБОМУ заработанному XP за день
+  // ===== ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ — раз-два в неделю, час на выполнение, бонусный XP =====
+  const SURPRISE_POOL=[
+    ['20 приседаний за раз',40,'strength'],['15 отжиманий за раз',40,'strength'],
+    ['1 минута планки',35,'strength'],['50 прыжков на скакалке',35,'agility'],
+    ['30 прыжков',30,'agility'],['10 минут растяжки',30,'will'],
+    ['20 скручиваний на пресс',35,'strength'],['5 минут быстрой ходьбы прямо сейчас',30,'endurance'],
+    ['Стакан воды прямо сейчас',20,'health'],['10 глубоких вдохов и выдох стресса',20,'will'],
+  ];
+  const SURPRISE_WINDOW_MS=60*60*1000; // час на выполнение
+  const SURPRISE_CHANCE=0.28; // ~2 раза в неделю в среднем
+  function maybeSpawnSurpriseQuest(){
+    if(!player)return;
+    if(player.surpriseQuest&&player.surpriseQuest.status==='active'){
+      if(Date.now()>player.surpriseQuest.deadline){player.surpriseQuest.status='expired';DB.set('player',player);}
+      else return; // уже есть активное — не спавним новое
+    }
+    if(player.lastSurpriseRoll===today())return; // бросаем кубик не больше раза в день
+    player.lastSurpriseRoll=today();
+    if(Math.random()<SURPRISE_CHANCE){
+      const [name,xp,sphere]=SURPRISE_POOL[Math.floor(Math.random()*SURPRISE_POOL.length)];
+      player.surpriseQuest={name,xp,sphere,deadline:Date.now()+SURPRISE_WINDOW_MS,status:'active'};
+      setTimeout(()=>toast('⚡ Внезапное задание Системы! У тебя 60 минут'),800);
+    }
+    DB.set('player',player);
+  }
+  let surpriseTickId=null;
+  function renderSurpriseQuest(){
+    const card=document.getElementById('surpriseCard');if(!card)return;
+    const q=player&&player.surpriseQuest;
+    if(!q||q.status!=='active'){card.classList.add('hide');if(surpriseTickId){clearInterval(surpriseTickId);surpriseTickId=null;}return;}
+    document.getElementById('surpriseName').textContent=q.name+' (+'+q.xp+' XP)';
+    card.classList.remove('hide');
+    if(surpriseTickId)clearInterval(surpriseTickId);
+    const tick=()=>{
+      const left=q.deadline-Date.now();
+      if(left<=0){
+        q.status='expired';DB.set('player',player);clearInterval(surpriseTickId);surpriseTickId=null;
+        card.classList.add('hide');toast('⌛ Время вышло — задание Системы пропало');
+        return;
+      }
+      const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+      const tEl=document.getElementById('surpriseTimer');if(tEl)tEl.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    };
+    tick();surpriseTickId=setInterval(tick,1000);
+  }
+  function completeSurpriseQuest(){
+    const q=player&&player.surpriseQuest;
+    if(!q||q.status!=='active')return;
+    if(Date.now()>q.deadline){q.status='expired';DB.set('player',player);renderSurpriseQuest();toast('⌛ Время уже истекло');return;}
+    const awarded=Math.round(q.xp*streakXpMultiplier(streak));
+    exp+=awarded;stats[q.sphere]=(stats[q.sphere]||0)+1;
+    if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);}
+    q.status='done';DB.set('player',player);
+    saveStats();renderStats();saveProgress();render();
+    if(surpriseTickId){clearInterval(surpriseTickId);surpriseTickId=null;}
+    document.getElementById('surpriseCard').classList.add('hide');
+    toast('✓ Внезапное задание выполнено! +'+awarded+' XP');
+  }
   function streakXpMultiplier(s){
     if(s>=365)return 1.30;
     if(s>=180)return 1.25;
@@ -1674,6 +1744,8 @@
     if(!player.joinedAt){player.joinedAt=today();DB.set('player',player);}
     refreshEffectiveRank();
     checkAwakeningFinalize();
+    maybeSpawnSurpriseQuest();
+    renderSurpriseQuest();
     wGoal=player.wGoal||1900;
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
