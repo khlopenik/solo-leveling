@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-47';
+  var APP_VERSION='2026-06-23-48';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -349,6 +349,7 @@
   .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:flex;justify-content:space-around;padding:10px 8px calc(10px + env(safe-area-inset-bottom));background:rgba(4,6,14,.94);border-top:1px solid var(--line);backdrop-filter:blur(10px);z-index:5}
   .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10px;letter-spacing:1px;text-decoration:none;font-family:"Exo 2";cursor:pointer}
   .nav a .ni{font-size:20px;font-family:initial}
+  .nav-bell{position:absolute;top:-4px;right:6px;min-width:16px;height:16px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;line-height:16px;text-align:center;padding:0 4px;font-family:"Exo 2";font-weight:700;box-shadow:0 0 8px rgba(255,92,122,.6)}
   .nav a.on{color:var(--cyan);text-shadow:0 0 10px rgba(70,215,255,.7)}
 
   .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--panel-solid);border:1px solid var(--line-strong);color:var(--cyan-soft);padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:0 0 22px rgba(70,215,255,.4);z-index:50;transition:transform .4s;letter-spacing:1px;white-space:nowrap;font-family:"Exo 2"}
@@ -707,7 +708,7 @@
   <a class="on" id="n-system" onclick="go('system')"><span class="ni">⚔</span>Система</a>
   <a id="n-nutri" onclick="go('nutri')"><span class="ni">🍎</span>Питание</a>
   <a id="n-prog" onclick="go('prog')"><span class="ni">📈</span>Прогресс</a>
-  <a id="n-guild" onclick="go('guild')"><span class="ni">🏆</span>Рейтинг</a>
+  <a id="n-guild" onclick="go('guild')" style="position:relative"><span class="ni">🏆</span>Рейтинг<span class="nav-bell hide" id="navBell">0</span></a>
 </div>
 <div class="chatview" id="chatview">
   <div class="cv-head">
@@ -1109,6 +1110,16 @@
     }
     loadLeaderboard();
     if(player&&qSel.size)setTimeout(showQuestReceived,400);
+    refreshFriendBell();
+    setInterval(refreshFriendBell,90000); // проверяем новые заявки в друзья каждые 1.5 минуты
+  }
+  async function refreshFriendBell(){
+    if(!player)return;
+    const res=await cloudCall({action:'friend_requests_incoming',uid:getUid()});
+    const n=(res&&res.requests&&res.requests.length)||0;
+    const el=document.getElementById('navBell');if(!el)return;
+    if(n>0){el.textContent=n>9?'9+':n;el.classList.remove('hide');}
+    else el.classList.add('hide');
   }
   async function loadLeaderboard(){
     const box=document.getElementById('lb-list');if(!box)return;
@@ -2492,7 +2503,7 @@
   }
   async function respondFriendFromProfile(targetUid,accept){
     const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
-    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');openPlayerProfile(targetUid);}
+    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');openPlayerProfile(targetUid);refreshFriendBell();}
   }
   async function loadFriendsTab(){
     const box=document.getElementById('g-friends');if(!box)return;
@@ -2522,7 +2533,7 @@
   }
   async function respondFriendTab(targetUid,accept){
     const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
-    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');loadFriendsTab();}
+    if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');loadFriendsTab();refreshFriendBell();}
   }
 
   // ===== ВЕСЬ ТОП =====

@@ -6,6 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, Upd
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from inactivity import check_inactivity
+from friend_notify import check_friend_requests
 
 load_dotenv()
 
@@ -35,6 +36,7 @@ def main() -> None:
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.job_queue.run_repeating(check_inactivity, interval=3600, first=30)
+    app.job_queue.run_repeating(check_friend_requests, interval=120, first=15)
     app.run_polling()
 
 
