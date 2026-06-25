@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-45';
+  var APP_VERSION='2026-06-23-46';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -635,7 +635,9 @@
     </div>
     <div class="window">
       <div class="sec-title">Замеры сантиметром <span style="color:var(--muted);font-size:11px" id="measDate">нет данных</span></div>
-      <div id="measList"></div>
+      <select id="meas-chart-field" onchange="drawMeasChart()" style="width:100%;padding:8px;margin-bottom:8px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;color:#fff;font-family:'Rajdhani';font-size:14px"></select>
+      <div id="measChart"></div>
+      <div id="measList" style="margin-top:8px"></div>
       <button class="wadd" style="margin-top:14px" onclick="openMeasForm()">＋ Записать новые замеры</button>
       <div class="rnote" style="margin-top:8px">Система напомнит сделать замеры раз в 1-2 недели</div>
     </div>
@@ -1926,7 +1928,7 @@
   }
   function renderMeasurements(){
     const dEl=document.getElementById('measDate');
-    if(!measurements.length){dEl.textContent='нет данных';document.getElementById('measList').innerHTML=MEAS_FIELDS.map(([k,label])=>'<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">— см</span><span class="mtd">—</span></div>').join('');return;}
+    if(!measurements.length){dEl.textContent='нет данных';document.getElementById('measList').innerHTML=MEAS_FIELDS.map(([k,label])=>'<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">— см</span><span class="mtd">—</span></div>').join('');initMeasChartSelect();drawMeasChart();return;}
     const last=measurements[measurements.length-1],prev=measurements.length>=2?measurements[measurements.length-2]:null;
     dEl.textContent=new Date(last.date+'T00:00:00').toLocaleDateString('ru-RU');
     document.getElementById('measList').innerHTML=MEAS_FIELDS.map(([k,label])=>{
@@ -1936,6 +1938,38 @@
         if(diff>0)d='<span class="mtd up">▲ '+diff+'</span>';else if(diff<0)d='<span class="mtd dn">▼ '+Math.abs(diff)+'</span>';}
       return '<div class="mtab"><span class="mtn">'+label+'</span><span class="mtv">'+last[k]+' см</span>'+d+'</div>';
     }).join('');
+    initMeasChartSelect();drawMeasChart();
+  }
+  let measChartField=null;
+  function initMeasChartSelect(){
+    const sel=document.getElementById('meas-chart-field');if(!sel||sel.options.length)return;
+    sel.innerHTML=MEAS_FIELDS.map(([k,label])=>'<option value="'+k+'">'+label+'</option>').join('');
+    sel.value=measChartField||'waist';
+  }
+  function drawMeasChart(){
+    const box=document.getElementById('measChart');if(!box)return;
+    const sel=document.getElementById('meas-chart-field');
+    const field=sel?sel.value:'waist';measChartField=field;
+    const label=(MEAS_FIELDS.find(f=>f[0]===field)||[,field])[1];
+    const src=measurements.filter(m=>m[field]!=null);
+    if(src.length<2){box.innerHTML='<div style="text-align:center;padding:20px 10px;color:var(--muted);font-size:12px;line-height:1.6">Нужно минимум 2 замера «'+label+'», чтобы построить график</div>';return;}
+    const values=src.map(m=>+m[field]);
+    const labels=src.map(m=>m.date.slice(5).replace('-','.'));
+    const W=300,H=120,pad=22;
+    const mn=Math.min(...values)-0.5,mx=Math.max(...values)+0.5,rng=mx-mn||1;
+    const x=i=>pad+i*(W-2*pad)/Math.max(1,values.length-1);
+    const y=v=>H-pad-(v-mn)/rng*(H-2*pad);
+    const step=Math.max(1,Math.floor(values.length/5));
+    let dots='',labs='',xl='';
+    const pts=values.map((v,i)=>x(i)+','+y(v)).join(' ');
+    values.forEach((v,i)=>{
+      dots+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" fill="#9b6bff"/>';
+      if(i===0||i===values.length-1||i%step===0){
+        labs+='<text x="'+x(i)+'" y="'+(y(v)-10)+'" fill="#dcecff" font-size="10" text-anchor="middle" font-family="Exo 2">'+v+'</text>';
+        xl+='<text x="'+x(i)+'" y="'+(H-6)+'" fill="#7f9bc7" font-size="9" text-anchor="middle">'+labels[i]+'</text>';
+      }
+    });
+    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%"><polyline points="'+pts+'" fill="none" stroke="#9b6bff" stroke-width="2.5"/><polygon points="'+pad+','+(H-pad)+' '+pts+' '+(W-pad)+','+(H-pad)+'" fill="rgba(155,107,255,0.10)"/>'+dots+labs+xl+'</svg>';
   }
 
   // ===== ВЕС И ГРАФИК =====
