@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-48';
+  var APP_VERSION='2026-06-23-49';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -695,9 +695,7 @@
         <div class="addf" onclick="toast('🔗 Скоро здесь можно будет добавить друга')">＋ Добавить друга</div>
       </div>
       <div id="g-chat" style="display:none">
-        <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Личные переписки и группы</div>
-        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Нет переписок — начни с того, что добавишь друга</div>
-        <div class="addf" onclick="toast('＋ Скоро здесь можно будет создать чат или группу')">＋ Новый чат или группа</div>
+        <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
       </div>
     </div>
   </div>
@@ -1115,8 +1113,13 @@
   }
   async function refreshFriendBell(){
     if(!player)return;
-    const res=await cloudCall({action:'friend_requests_incoming',uid:getUid()});
-    const n=(res&&res.requests&&res.requests.length)||0;
+    const [reqRes,convRes]=await Promise.all([
+      cloudCall({action:'friend_requests_incoming',uid:getUid()}),
+      cloudCall({action:'get_conversations',uid:getUid()}),
+    ]);
+    const reqN=(reqRes&&reqRes.requests&&reqRes.requests.length)||0;
+    const unreadN=((convRes&&convRes.conversations)||[]).reduce((s,c)=>s+(c.unread||0),0);
+    const n=reqN+unreadN;
     const el=document.getElementById('navBell');if(!el)return;
     if(n>0){el.textContent=n>9?'9+':n;el.classList.remove('hide');}
     else el.classList.add('hide');
@@ -1333,6 +1336,7 @@
     btn.classList.add('on');
     gtabs.forEach(k=>document.getElementById('g-'+k).style.display=k===which?'block':'none');
     if(which==='friends')loadFriendsTab();
+    if(which==='chat')loadChatsTab();
   }
   function tab2(which){
     const btns=document.querySelectorAll('.seg button');
@@ -1390,36 +1394,49 @@
     t.textContent='LEVEL '+n;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
     setTimeout(()=>el.classList.remove('show'),1000);
   }
-  const chats={
-    'Кирилл':{ava:'К',status:'в сети',msgs:[['them','Погнали на рейд вечером?','14:20'],['me','Я только квест добью 💪','14:22']]},
-    'Аня':{ava:'А',status:'в сети',msgs:[['them','Я уже квест закрыла 💪','12:05'],['me','Красава! Я догоняю','12:07']]},
-    'Клан «Тени»':{ava:'⚔',status:'8 участников',msgs:[['them','Дима: кто сегодня на 100%?','09:40'],['them','Аня: я 🙋','09:42']]},
-    'Пати с Саней':{ava:'🤝',status:'бади',msgs:[['them','не забудь про тренировку!','вчера'],['me','уже иду 💪','вчера']]},
-    'Марина':{ava:'М',status:'была 2 ч назад',msgs:[['them','Привет! Как успехи?','11:00']]},
-    'Саша':{ava:'С',status:'вчера',msgs:[['them','Спасибо за пинок 😅','вчера']]}
-  };
-  let curChat=null;
-  function openChat(name){
-    const c=chats[name]||{ava:name[0],status:'в сети',msgs:[]};curChat=name;
-    document.getElementById('cv-ava').textContent=c.ava;
-    document.getElementById('cv-name').firstChild.textContent=name;
-    document.getElementById('cv-status').textContent=c.status;
-    const b=document.getElementById('cv-body');b.innerHTML='';
-    c.msgs.forEach(m=>addBub(m[0],m[1],m[2]));
+  let curChatUid=null,chatPollId=null,lastMsgId=0;
+  function fmtMsgTime(iso){const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+  async function openChat(targetUid,name,avatarUrl){
+    curChatUid=targetUid;lastMsgId=0;
+    const avaEl=document.getElementById('cv-ava');
+    avaEl.innerHTML=avatarUrl?'<img src="'+avatarUrl+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':(name||'?')[0].toUpperCase();
+    document.getElementById('cv-name').firstChild.textContent=name||'Игрок';
+    document.getElementById('cv-status').textContent='';
+    const b=document.getElementById('cv-body');b.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>';
     document.getElementById('chatview').classList.add('show');
-    b.scrollTop=b.scrollHeight;
+    await loadChatMessages();
+    if(chatPollId)clearInterval(chatPollId);
+    chatPollId=setInterval(loadChatMessages,4000);
   }
-  function closeChat(){document.getElementById('chatview').classList.remove('show');}
+  async function loadChatMessages(){
+    if(!curChatUid)return;
+    const res=await cloudCall({action:'get_messages',uid:getUid(),target_uid:curChatUid});
+    const msgs=(res&&res.messages)||[];
+    if(!msgs.length){
+      const b=document.getElementById('cv-body');
+      if(lastMsgId===0)b.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px;font-size:13px">Пока ничего — напиши первым!</div>';
+      return;
+    }
+    const newOnes=msgs.filter(m=>m.id>lastMsgId);
+    if(!newOnes.length)return;
+    const b=document.getElementById('cv-body');
+    if(lastMsgId===0)b.innerHTML='';
+    newOnes.forEach(m=>addBub(m.sender_uid===getUid()?'me':'them',m.text,fmtMsgTime(m.created_at)));
+    lastMsgId=msgs[msgs.length-1].id;
+  }
+  function closeChat(){curChatUid=null;if(chatPollId){clearInterval(chatPollId);chatPollId=null;}document.getElementById('chatview').classList.remove('show');refreshFriendBell();}
   function addBub(who,text,time){
     const b=document.getElementById('cv-body');
     const d=document.createElement('div');d.className='bub '+who;
-    d.innerHTML=text+'<small>'+time+'</small>';b.appendChild(d);b.scrollTop=b.scrollHeight;
+    d.innerHTML=escapeHtml(text)+'<small>'+time+'</small>';b.appendChild(d);b.scrollTop=b.scrollHeight;
   }
-  function sendMsg(){
-    const i=document.getElementById('cv-text'),t=i.value.trim();if(!t)return;
-    const now=new Date(),tm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    addBub('me',t,tm);if(chats[curChat])chats[curChat].msgs.push(['me',t,tm]);i.value='';
-    setTimeout(()=>addBub('them','Принято ⚔',tm),900);
+  function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  async function sendMsg(){
+    const i=document.getElementById('cv-text'),txt=i.value.trim();if(!txt||!curChatUid)return;
+    i.value='';
+    const res=await cloudCall({action:'send_message',uid:getUid(),target_uid:curChatUid,text:txt});
+    if(res&&res.ok)await loadChatMessages();
+    else toast('Не удалось отправить сообщение');
   }
   let t;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(t);t=setTimeout(()=>e.classList.remove('show'),1600);}
   let wGoal=1900, wNow=1250, curH=1, curVol=250, curCup='💧';
@@ -2494,7 +2511,9 @@
       '<div class="pr">Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+' · '+(p.exp||0)+' EXP</div>'+
       '<div class="pr" style="color:var(--muted);font-size:12px">🔥 серия: '+(p.streak||0)+' дней (рекорд '+(p.streak_best||0)+')</div>'+
       actionsHtml+
-      (targetUid===getUid()?'':'<button class="poke" style="width:100%;margin-top:10px" onclick="toast(\'💬 Личные сообщения — скоро\')">✉ Написать</button>');
+      (targetUid===getUid()?'':(res.friendStatus==='friends'
+        ?'<button class="poke" style="width:100%;margin-top:10px" onclick="document.getElementById(\'playerprofmodal\').classList.remove(\'show\');openChat(\''+targetUid+'\',\''+(p.name||'Игрок').replace(/'/g,"\\'")+'\',\''+(p.avatar_url||'')+'\')">✉ Написать</button>'
+        :'<div style="color:var(--muted);font-size:11px;margin-top:8px;text-align:center">Написать можно только друзьям</div>'));
   }
   async function sendFriendRequest(targetUid){
     const res=await cloudCall({action:'friend_request',uid:getUid(),target_uid:targetUid});
@@ -2504,6 +2523,24 @@
   async function respondFriendFromProfile(targetUid,accept){
     const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
     if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');openPlayerProfile(targetUid);refreshFriendBell();}
+  }
+  async function loadChatsTab(){
+    const box=document.getElementById('g-chat');if(!box)return;
+    box.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>';
+    const res=await cloudCall({action:'get_conversations',uid:getUid()});
+    const list=(res&&res.conversations)||[];
+    if(!list.length){
+      box.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:8px">Личные переписки</div>'+
+        '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Нет переписок — открой профиль друга в рейтинге и напиши первым!</div>';
+      return;
+    }
+    box.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:8px">Личные переписки</div>'+
+      list.map(c=>{
+        const p=c.player;const name=(p&&p.name)||'Игрок';
+        const ava=p&&p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':name[0].toUpperCase();
+        const time=new Date(c.last_at).toLocaleDateString()===new Date().toLocaleDateString()?fmtMsgTime(c.last_at):new Date(c.last_at).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+        return '<div class="chatrow" onclick="openChat(\''+c.device_id+'\',\''+name.replace(/'/g,"\\'")+'\',\''+(p&&p.avatar_url||'')+'\')"><div class="ava">'+ava+'</div><div class="cm"><b>'+name+'</b><small>'+escapeHtml(c.last_text)+'</small></div><div class="ct">'+time+(c.unread?'<div class="nav-bell" style="position:static;display:inline-block;margin-top:4px">'+c.unread+'</div>':'')+'</div></div>';
+      }).join('');
   }
   async function loadFriendsTab(){
     const box=document.getElementById('g-friends');if(!box)return;
