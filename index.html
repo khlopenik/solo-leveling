@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-51';
+  var APP_VERSION='2026-06-23-52';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1232,6 +1232,20 @@
   ];
   const SURPRISE_WINDOW_MS=60*60*1000; // час на выполнение
   const SURPRISE_CHANCE=0.28; // ~2 раза в неделю в среднем
+  // ===== БОНУС НА ДЕНЬ РОЖДЕНИЯ — проверяется каждый день, а не только при регистрации =====
+  const BIRTHDAY_BONUS_XP=500;
+  function checkBirthday(){
+    if(!player||!player.dob)return;
+    const d=new Date(player.dob+'T00:00:00'),t=new Date();
+    if(d.getMonth()!==t.getMonth()||d.getDate()!==t.getDate())return;
+    const yr=t.getFullYear();
+    if(player.lastBirthdayBonusYear===yr)return; // уже выдан в этом году
+    player.lastBirthdayBonusYear=yr;DB.set('player',player);
+    exp+=BIRTHDAY_BONUS_XP;
+    if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);}
+    saveProgress();render();
+    setTimeout(()=>toast('🎂 С днём рождения! +'+BIRTHDAY_BONUS_XP+' XP буст'),900);
+  }
   function maybeSpawnSurpriseQuest(){
     if(!player)return;
     if(player.surpriseQuest&&player.surpriseQuest.status==='active'){
@@ -1794,8 +1808,7 @@
     const name=document.getElementById('o-name').value||'Игрок';
     const dob=document.getElementById('o-dob').value;
     let age=null;
-    if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;
-      if(d.getMonth()===t.getMonth()&&d.getDate()===t.getDate())setTimeout(()=>toast('🎂 С днём рождения! +500 XP буст'),900);}
+    if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
     const sex=document.getElementById('o-sex').value;
     if(!sex){toast('⚠ Выбери пол');return;}
     wGoal=Math.round(w*30/50)*50;
@@ -1837,6 +1850,7 @@
     checkAwakeningFinalize();
     maybeSpawnSurpriseQuest();
     renderSurpriseQuest();
+    checkBirthday();
     wGoal=player.wGoal||1900;
     document.getElementById('wnorm').textContent='норма '+wGoal+' мл';
     document.querySelector('.hname').textContent='ИГРОК · '+(player.name||'ИГРОК').toUpperCase();
