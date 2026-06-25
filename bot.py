@@ -1,12 +1,21 @@
+"""Опциональный live-бот — только для команды /start (приветствие + кнопка).
+
+Периодические задачи (напоминания о неактивности, пуш по заявкам в
+друзья) теперь НЕ здесь — они переехали в GitHub Actions
+(.github/workflows/bot-*.yml), которые запускают scripts/check_*.py по
+расписанию без необходимости держать сервер 24/7.
+
+Сама кнопка «Открыть Систему» в меню бота уже настроена через
+setChatMenuButton и работает всегда, даже если этот процесс не запущен —
+запускать bot.py нужно только если хочешь, чтобы /start отвечал текстом.
+"""
+
 import os
 import logging
 
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-
-from inactivity import check_inactivity
-from friend_notify import check_friend_requests
 
 load_dotenv()
 
@@ -35,8 +44,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def main() -> None:
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.job_queue.run_repeating(check_inactivity, interval=3600, first=30)
-    app.job_queue.run_repeating(check_friend_requests, interval=120, first=15)
     app.run_polling()
 
 

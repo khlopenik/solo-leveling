@@ -1,31 +1,29 @@
-"""Фоновая проверка неактивности игроков: напоминания и штраф к характеристикам.
+"""Разовая проверка неактивности игроков — запускается по расписанию
+GitHub Actions (.github/workflows/bot-inactivity.yml), а не постоянным
+процессом. Никакого сервера/Render не требуется.
 
-Штраф применяется не напрямую (бот не видит локальные данные приложения),
-а копится в колонке players.pending_penalty — мини-апп считывает её при
-следующем открытии (cloudInit -> applyPendingPenalty в index.html) и сама
-вычитает процент из статов, после чего подтверждает через action=ack_penalty.
+Шлёт сообщения напрямую через Telegram Bot API (без python-telegram-bot —
+он нужен только живому боту, а здесь обычный HTTP-запрос).
 """
 
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
 
+TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 SCHEMA = "solo_leveling"
-ASSETS_DIR = Path(__file__).parent / "assets" / "achievements"
+ASSETS_DIR = Path(__file__).parent.parent / "assets" / "achievements"
+TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 # (порог в часах с последней синхронизации, картинка, штраф в эксп (флэт), текст)
-# числа взяты из артов g7_* (там переделан текст "HP" -> "ЭКСП", сами цифры —
-# авторские от Любы); штраф режет накопленный эксп при следующем заходе —
-# см. applyPendingPenalty() в index.html; бонус за возврат (COMEBACK_BONUS=20)
-# всегда меньше минимального штрафа (100), так что уйти специально невыгодно
 TIERS = [
     (12, "g7_r0_c0.png", 100,
      "Хехехе… уже 12 часов? Как быстро ты забываешь о своей системе.\n\n"
@@ -54,23 +52,14 @@ TIERS = [
 
 
 def _headers(write=False):
-    h = {
-        "apikey": SUPABASE_SERVICE_KEY,
-        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-    }
+    h = {"apikey": SUPABASE_SERVICE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"}
     h["Content-Profile" if write else "Accept-Profile"] = SCHEMA
     return h
 
 
 def _fetch_tg_players():
-    if not SUPABASE_SERVICE_KEY:
-        logger.warning("SUPABASE_SERVICE_KEY не задан — проверка неактивности пропущена")
-        return []
     url = f"{SUPABASE_URL}/rest/v1/players"
-    params = {
-        "select": "device_id,name,updated_at,last_warned_tier,pending_penalty",
-        "device_id": "like.tg*",
-    }
+    params = {"select": "device_id,name,updated_at,last_warned_tier,pending_penalty", "device_id": "like.tg*"}
     r = requests.get(url, headers=_headers(), params=params, timeout=15)
     r.raise_for_status()
     return r.json()
@@ -88,12 +77,25 @@ def _patch_player(device_id, last_warned_tier, pending_penalty):
     r.raise_for_status()
 
 
-async def check_inactivity(context: ContextTypes.DEFAULT_TYPE) -> None:
+def _send_photo(tg_id, img_name, caption):
+    photo_path = ASSETS_DIR / img_name
+    with open(photo_path, "rb") as f:
+        r = requests.post(
+            f"{TELEGRAM_API}/sendPhoto",
+            data={"chat_id": tg_id, "caption": caption},
+            files={"photo": f},
+            timeout=20,
+        )
+    if not r.ok:
+        logger.error("sendPhoto failed for %s: %s", tg_id, r.text)
+
+
+def main():
     try:
         players = _fetch_tg_players()
     except requests.RequestException:
-        logger.exception("Не удалось получить список игроков для проверки неактивности")
-        return
+        logger.exception("Не удалось получить список игроков")
+        sys.exit(1)
 
     now = datetime.now(timezone.utc)
     for p in players:
@@ -120,11 +122,9 @@ async def check_inactivity(context: ContextTypes.DEFAULT_TYPE) -> None:
             if i <= last_tier or hours_inactive < threshold:
                 continue
             try:
-                photo_path = ASSETS_DIR / img
-                with open(photo_path, "rb") as f:
-                    await context.bot.send_photo(chat_id=tg_id, photo=f, caption=text)
+                _send_photo(tg_id, img, text)
             except Exception:
-                logger.exception("Не удалось отправить напоминание о неактивности игроку %s", tg_id)
+                logger.exception("Не удалось отправить напоминание игроку %s", tg_id)
             new_tier = i
             penalty_add += pct
 
@@ -132,4 +132,9 @@ async def check_inactivity(context: ContextTypes.DEFAULT_TYPE) -> None:
             try:
                 _patch_player(device_id, new_tier, pending + penalty_add)
             except requests.RequestException:
-                logger.exception("Не удалось обновить штраф неактивности для %s", device_id)
+                logger.exception("Не удалось обновить штраф для %s", device_id)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    main()
