@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-54';
+  var APP_VERSION='2026-06-23-55';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -359,6 +359,7 @@
   .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--panel-solid);border:1px solid var(--line-strong);color:var(--cyan-soft);padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:0 0 22px rgba(70,215,255,.4);z-index:50;transition:transform .4s;letter-spacing:1px;white-space:nowrap;font-family:"Exo 2"}
   .toast.show{transform:translateX(-50%) translateY(0)}
   .screen{display:none} .screen.active{display:block}
+  .hide{display:none!important}
   .onb{position:fixed;inset:0;z-index:80;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;background:radial-gradient(900px 500px at 50% -5%,rgba(43,107,255,.22),transparent 60%),var(--bg)}
   .onb.hide{display:none}
   .boot{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:radial-gradient(900px 500px at 50% 0,rgba(43,107,255,.2),transparent 60%),var(--bg)}
