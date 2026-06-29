@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-57';
+  var APP_VERSION='2026-06-23-58';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -242,7 +242,7 @@
   .badge small{font-size:9px;color:var(--muted);letter-spacing:.5px}
   .badge.lock{opacity:.35;filter:grayscale(1)}
   .badge.imgbadge{padding:0}
-  .badge.imgbadge img{width:100%;height:100%;object-fit:cover;object-position:50% 0%}
+  .badge.imgbadge img{width:100%;height:100%;object-fit:contain}
   .ach-group-title{display:flex;align-items:center;gap:10px;font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan-soft);margin:20px 0 10px;text-transform:uppercase}
   .ach-group-title:first-child{margin-top:0}
   .ach-group-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(70,215,255,.35),transparent)}
@@ -271,9 +271,7 @@
   .badge3d-front{font-size:34px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 35%,rgba(43,107,255,.18),rgba(0,0,0,.35))}
   .badge3d-front.un{border:1px solid rgba(255,214,107,.55);background:radial-gradient(circle at 50% 32%,rgba(255,214,107,.28),rgba(43,16,60,.5));box-shadow:0 0 18px rgba(255,214,107,.35),inset 0 0 16px rgba(255,214,107,.14)}
   .badge3d-front.lock{filter:grayscale(1) brightness(.55);opacity:.7}
-  .badge3d-front img{width:100%;height:100%;object-fit:cover;object-position:50% 0%}
-  .b3-front-label{position:absolute;left:0;right:0;bottom:0;padding:5px 5px 6px;text-align:center;font-family:"Exo 2";font-size:10px;font-weight:700;letter-spacing:.3px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.88),rgba(0,0,0,.5) 70%,transparent);line-height:1.2}
-  .b3-front-label.lock{color:#aab3c2}
+  .badge3d-front img{width:100%;height:100%;object-fit:contain}
   .badge3d-front .b3-lockico{position:absolute;right:5px;bottom:4px;font-size:12px;opacity:.85}
   .badge3d-front .b3-check{position:absolute;right:4px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}
   .badge3d-back{transform:rotateY(180deg);padding:14px 10px;text-align:center;flex-direction:column;gap:7px;border:1px solid rgba(70,215,255,.3);background:linear-gradient(160deg,rgba(43,107,255,.22),rgba(10,10,20,.6))}
@@ -772,7 +770,8 @@
   </div>
 </div>
 <div class="modal" id="qbmodal" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="pcard" style="text-align:left;max-height:86vh;overflow-y:auto">
+  <div class="pcard achcard" style="text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ach-x" onclick="document.getElementById('qbmodal').classList.remove('show')">✕</div>
     <div class="pn" style="text-align:center">⚙ Настрой свой квест</div>
     <div class="pr" style="text-align:center;margin-bottom:6px">Выбери минимум 1 упражнение из каждой категории. Можно добавить свои.</div>
     <div id="qb-body"></div>
@@ -2284,8 +2283,9 @@
           :(t?' <span style="color:var(--muted);font-size:12px">· '+t+'</span>':'');
         h+='<div class="priv-row"><span class="pl">'+n+tgtHtml+' <span style="color:var(--gold);font-size:11px">+'+effXp+'</span></span><div class="sw'+(on?' on':'')+'" onclick="toggleEx(this,\''+key+'\')"></div></div>';
       });
-      qCustom.filter(c=>c.cat===cat).forEach((c,i)=>{
-        h+='<div class="priv-row"><span class="pl">'+c.n+(c.t?' <span style="color:var(--muted);font-size:12px">· '+c.t+'</span>':'')+' <span style="color:var(--gold);font-size:11px">+'+c.xp+'</span> <span style="color:var(--muted);font-size:11px">(своё)</span></span><div class="sw on" onclick="this.classList.toggle(\'on\')"></div></div>';
+      qCustom.forEach((c,i)=>{
+        if(c.cat!==cat)return;
+        h+='<div class="priv-row"><span class="pl">'+c.n+(c.t?' <span style="color:var(--muted);font-size:12px">· '+c.t+'</span>':'')+' <span style="color:var(--gold);font-size:11px">+'+c.xp+'</span> <span style="color:var(--muted);font-size:11px">(своё)</span></span><span class="poke" style="border-color:var(--danger);color:#ffb3c2;padding:5px 9px" onclick="removeCustomEx('+i+')">✕</span></div>';
       });
     }
     document.getElementById('qb-body').innerHTML=h;
@@ -2299,16 +2299,25 @@
     qCustom.push({cat,n,t,xp:40});document.getElementById('qb-cn').value='';document.getElementById('qb-ct').value='';
     renderQB();toast('＋ Добавлено: '+n);
   }
+  function removeCustomEx(i){
+    const removed=qCustom[i];
+    qCustom.splice(i,1);
+    renderQB();
+    if(removed)toast('✕ Удалено: '+removed.n);
+  }
   function saveQuest(){
+    // мягкое напоминание, а не жёсткая блокировка — раньше при недостающей категории
+    // (например, после добавления новых категорий) сохранить квест было невозможно вообще
     const missing=Object.keys(qLib).filter(cat=>{
       const hasLib=qLib[cat].some(([n])=>qSel.has(cat+'|'+n));
       const hasCustom=qCustom.some(c=>c.cat===cat);
       return !hasLib&&!hasCustom;
     });
-    if(missing.length){toast('Выбери хотя бы 1 упражнение из: '+missing.join(', '));return;}
     DB.set('qsel',[...qSel]);DB.set('qcustom',qCustom);DB.set('qtargets',qTargets);
     document.getElementById('qbmodal').classList.remove('show');
-    renderQuest();toast('✓ Квест обновлён');
+    renderQuest();
+    if(missing.length)toast('✓ Сохранено. Совет: добавь хотя бы 1 упражнение из: '+missing.join(', '));
+    else toast('✓ Квест обновлён');
   }
   function renderQuest(){
     let items=[];
@@ -2558,10 +2567,9 @@
   function renderBadge3d(a){
     const front=a.img?'<img src="'+ACH_DIR+a.img+'.png" alt="">':a.em;
     const mark=a.un?'<span class="b3-check">✨</span>':'<span class="b3-lockico">🔒</span>';
-    const label='<div class="b3-front-label'+(a.un?'':' lock')+'">'+(a.n||'')+'</div>';
     return '<div class="badge3d" onclick="this.classList.toggle(\'flipped\')">'+
       '<div class="badge3d-inner">'+
-        '<div class="badge3d-front'+(a.un?' un':' lock')+'">'+front+mark+label+'</div>'+
+        '<div class="badge3d-front'+(a.un?' un':' lock')+'">'+front+mark+'</div>'+
         '<div class="badge3d-back'+(a.un?' un':'')+'">'+
           '<div class="b3-name">'+(a.n||'')+'</div>'+
           '<div class="b3-req">'+(a.req||'')+'</div>'+
