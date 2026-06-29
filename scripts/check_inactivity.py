@@ -44,11 +44,11 @@ TIERS = [
 ]
 
 
-def _tier_text(days, pct):
+def _tier_text(days, pct, new_exp):
     return (
         f"⚠ Ты не выполнял ежедневный квест {days} "
         f"{'день' if days == 1 else 'дня' if days < 5 else 'дней'} подряд. "
-        f"Серия сгорела.\n\nШтраф при следующем заходе: −{pct} эксп."
+        f"Серия сгорела.\n\nШтраф: −{pct} эксп (сейчас: {new_exp})."
     )
 
 
@@ -61,7 +61,7 @@ def _headers(write=False):
 def _fetch_tg_players():
     url = f"{SUPABASE_URL}/rest/v1/players"
     params = {
-        "select": "device_id,name,updated_at,last_warned_tier,pending_penalty,state",
+        "select": "device_id,name,exp,updated_at,last_warned_tier,pending_penalty,state",
         "device_id": "like.tg*",
     }
     r = requests.get(url, headers=_headers(), params=params, timeout=15)
@@ -69,13 +69,21 @@ def _fetch_tg_players():
     return r.json()
 
 
-def _patch_player(device_id, last_warned_tier, pending_penalty):
+def _patch_player(device_id, last_warned_tier, pending_penalty, exp=None, state=None):
+    """Штраф списывается отсюда же, сразу — рейтинг должен быть честным
+    независимо от того, заходит ли игрок в приложение. exp/state передаём
+    только когда меняем сам exp, чтобы не перетирать state лишний раз."""
+    body = {"last_warned_tier": last_warned_tier, "pending_penalty": pending_penalty}
+    if exp is not None:
+        body["exp"] = exp
+    if state is not None:
+        body["state"] = state
     url = f"{SUPABASE_URL}/rest/v1/players"
     r = requests.patch(
         url,
         headers={**_headers(write=True), "Content-Type": "application/json"},
         params={"device_id": f"eq.{device_id}"},
-        json={"last_warned_tier": last_warned_tier, "pending_penalty": pending_penalty},
+        json=body,
         timeout=15,
     )
     r.raise_for_status()
@@ -137,34 +145,42 @@ def main():
         days_missed = (today - last_completed).days
 
         last_tier = p.get("last_warned_tier") or 0
-        pending = p.get("pending_penalty") or 0
         new_tier = last_tier
-        penalty_add = 0
 
         if days_missed == 0 and last_tier:
             # игрок вернулся и снова закрыл день — сбрасываем счётчик предупреждений,
             # иначе при следующем срыве серии тиры 1/2 будут молча пропущены
             try:
-                _patch_player(device_id, 0, pending)
+                _patch_player(device_id, 0, 0)
             except requests.RequestException:
                 logger.exception("Не удалось сбросить тир предупреждений для %s", device_id)
             continue
 
+        cur_exp = p.get("exp") or 0
+        state = dict(p.get("state") or {})
+        penalty_total = 0
+
         for i, (threshold_days, img, pct) in enumerate(TIERS, start=1):
             if i <= last_tier or days_missed < threshold_days:
                 continue
+            new_exp = max(0, cur_exp - pct)
             try:
-                _send_photo(tg_id, img, _tier_text(threshold_days, pct))
+                _send_photo(tg_id, img, _tier_text(threshold_days, pct, new_exp))
             except Exception:
                 logger.exception("Не удалось отправить напоминание игроку %s", tg_id)
+            cur_exp = new_exp
             new_tier = i
-            penalty_add += pct
+            penalty_total += pct
 
         if new_tier != last_tier:
+            # штраф списываем тут же, и в колонке exp, и внутри state.exp (иначе
+            # при следующем входе игрока его клиент перетрёт exp обратно из state) —
+            # рейтинг читает колонку exp, она должна быть честной без захода игрока
+            state["exp"] = cur_exp
             try:
-                _patch_player(device_id, new_tier, pending + penalty_add)
+                _patch_player(device_id, new_tier, 0, exp=cur_exp, state=state)
             except requests.RequestException:
-                logger.exception("Не удалось обновить штраф для %s", device_id)
+                logger.exception("Не удалось списать штраф для %s", device_id)
 
 
 if __name__ == "__main__":
