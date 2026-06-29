@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-29-59';
+  var APP_VERSION='2026-06-29-60';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -704,8 +704,7 @@
         <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
       </div>
       <div id="g-friends" style="display:none">
-        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Пока нет друзей.<br>Добавь первого — познакомьтесь и тренируйтесь вместе!</div>
-        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет добавить друга')">＋ Добавить друга</div>
+        <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
       </div>
       <div id="g-chat" style="display:none">
         <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
