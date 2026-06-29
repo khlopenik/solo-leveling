@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-06-23-58';
+  var APP_VERSION='2026-06-29-59';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -698,13 +698,10 @@
         <div style="text-align:center;color:var(--muted);font-size:13px;padding:28px 16px;line-height:1.6">Пока тут пусто.<br>Выполни квест или закрой серию дней — и тут появятся события 🔥</div>
       </div>
       <div id="g-clan" style="display:none">
-        <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px 8px;line-height:1.6">У тебя пока нет клана</div>
-        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет создать или найти клан')">⚔ Создать свой клан</div>
+        <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
       </div>
       <div id="g-pati" style="display:none">
-        <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Бади 1-на-1: следите друг за другом, напоминаете о тренировке</div>
-        <div style="text-align:center;color:var(--muted);font-size:13px;padding:16px;line-height:1.6">Нет бади — найди партнёра, чтобы тренироваться вместе</div>
-        <div class="addf" onclick="toast('🔗 Скоро здесь можно будет найти бади')">＋ Найти бади</div>
+        <div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>
       </div>
       <div id="g-friends" style="display:none">
         <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 16px;line-height:1.6">Пока нет друзей.<br>Добавь первого — познакомьтесь и тренируйтесь вместе!</div>
@@ -1416,6 +1413,8 @@
     gtabs.forEach(k=>document.getElementById('g-'+k).style.display=k===which?'block':'none');
     if(which==='friends')loadFriendsTab();
     if(which==='chat')loadChatsTab();
+    if(which==='clan')loadClanTab();
+    if(which==='pati')loadPartyTab();
   }
   function tab2(which){
     const btns=document.querySelectorAll('.seg button');
@@ -2632,6 +2631,12 @@
     else if(res.friendStatus==='pending_sent')actionsHtml='<div style="color:var(--muted);font-size:13px;margin-top:10px">Заявка отправлена, ждём ответа</div>';
     else if(res.friendStatus==='pending_received')actionsHtml='<button class="enter" style="margin-top:10px" onclick="respondFriendFromProfile(\''+targetUid+'\',true)">✓ Принять заявку в друзья</button>';
     else actionsHtml='<button class="enter" style="margin-top:10px" onclick="sendFriendRequest(\''+targetUid+'\')">＋ Добавить в друзья</button>';
+    if(targetUid!==getUid()){
+      if(res.partyStatus==='buddies')actionsHtml+='<div style="color:var(--ok);font-size:13px;margin-top:6px">✓ Вы бади</div>';
+      else if(res.partyStatus==='pending_sent')actionsHtml+='<div style="color:var(--muted);font-size:13px;margin-top:6px">Приглашение в бади отправлено</div>';
+      else if(res.partyStatus==='pending_received')actionsHtml+='<button class="poke" style="margin-top:6px;width:100%" onclick="respondPartyFromProfile(\''+targetUid+'\',true)">✓ Принять приглашение в бади</button>';
+      else actionsHtml+='<button class="poke" style="margin-top:6px;width:100%" onclick="sendPartyInvite(\''+targetUid+'\')">🤝 Предложить стать бади</button>';
+    }
     if(res.hidden){
       box.innerHTML='<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 10px;background:rgba(43,107,255,.16);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--cyan);overflow:hidden">'+ava+'</div>'+
         '<div class="pn">'+(p.name||'Игрок')+'</div>'+
@@ -2706,6 +2711,99 @@
   async function respondFriendTab(targetUid,accept){
     const res=await cloudCall({action:'friend_respond',uid:getUid(),target_uid:targetUid,accept});
     if(res&&res.ok){toast(accept?'✓ Теперь вы друзья':'Заявка отклонена');loadFriendsTab();refreshFriendBell();}
+  }
+
+  // ===== КЛАН =====
+  async function loadClanTab(){
+    const box=document.getElementById('g-clan');if(!box)return;
+    box.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>';
+    const mine=await cloudCall({action:'clan_my',uid:getUid()});
+    if(mine&&mine.clan){
+      const c=mine.clan;const members=mine.members||[];
+      let h='<div style="text-align:center;margin-bottom:12px"><div style="font-family:\'Exo 2\';font-size:18px;color:var(--gold)">⚔ '+escapeHtml(c.name)+'</div>'+
+        '<div style="color:var(--muted);font-size:12px">'+members.length+' '+(members.length===1?'участник':'участников')+'</div></div>';
+      h+=members.map(m=>{const p=m.player;const name=(p&&p.name)||'Игрок';
+        return '<div class="rankrow" style="cursor:default"><div class="ava">'+(p&&p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':name[0])+'</div><div class="un">'+name+(m.role==='owner'?' <small style="color:var(--gold)">👑 лидер</small>':'')+'<small>Ранг '+((p&&p.rank)||'E')+' · LVL '+((p&&p.level)||1)+'</small></div><div class="xp">'+((p&&p.exp)||0)+'</div></div>';
+      }).join('');
+      h+='<div class="addf" style="margin-top:10px;border-color:var(--danger);color:#ffb3c2" onclick="leaveClan()">'+(mine.myRole==='owner'?'✕ Распустить / выйти из клана':'✕ Покинуть клан')+'</div>';
+      box.innerHTML=h;
+      return;
+    }
+    const listRes=await cloudCall({action:'clan_list'});
+    const clans=(listRes&&listRes.clans)||[];
+    let h='<div class="addf" onclick="createClan()">⚔ Создать свой клан</div>';
+    if(clans.length){
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--cyan);margin:14px 0 8px">СУЩЕСТВУЮЩИЕ КЛАНЫ</div>';
+      h+=clans.map(c=>'<div class="rankrow" style="cursor:default"><div class="ava">⚔</div><div class="un">'+escapeHtml(c.name)+'<small>'+c.member_count+' '+(c.member_count===1?'участник':'участников')+'</small></div><button class="poke" onclick="joinClan(\''+c.id+'\')">Войти</button></div>').join('');
+    } else {
+      h+='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px;line-height:1.6">Пока нет ни одного клана — создай первый!</div>';
+    }
+    box.innerHTML=h;
+  }
+  async function createClan(){
+    const name=(prompt('Название клана')||'').trim();
+    if(!name)return;
+    const res=await cloudCall({action:'clan_create',uid:getUid(),name});
+    if(res&&res.ok){toast('✓ Клан создан');loadClanTab();}
+    else toast(res&&res.error==='already in clan'?'Ты уже в клане':'Не удалось создать клан');
+  }
+  async function joinClan(clanId){
+    const res=await cloudCall({action:'clan_join',uid:getUid(),clan_id:clanId});
+    if(res&&res.ok){toast('✓ Ты вступил в клан');loadClanTab();}
+    else toast(res&&res.error==='already in clan'?'Ты уже в клане':'Не удалось войти в клан');
+  }
+  async function leaveClan(){
+    const res=await cloudCall({action:'clan_leave',uid:getUid()});
+    if(res&&res.ok){toast('Клан покинут');loadClanTab();}
+  }
+
+  // ===== БАДИ (ПАТИ 1-на-1) =====
+  async function loadPartyTab(){
+    const box=document.getElementById('g-pati');if(!box)return;
+    box.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Загрузка…</div>';
+    const [myRes,reqRes]=await Promise.all([
+      cloudCall({action:'party_my',uid:getUid()}),
+      cloudCall({action:'party_incoming',uid:getUid()}),
+    ]);
+    const reqs=(reqRes&&reqRes.requests)||[];
+    let h='<div style="color:var(--muted);font-size:12px;margin-bottom:10px">Бади 1-на-1: следите друг за другом, напоминаете о тренировке</div>';
+    if(reqs.length){
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--gold);margin-bottom:8px">ПРИГЛАШЕНИЯ В БАДИ</div>';
+      h+=reqs.map(r=>{const p=r.player;if(!p)return'';
+        return '<div class="rankrow" style="cursor:default"><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small></div>'+
+          '<button class="poke" onclick="respondPartyTab(\''+r.requester_uid+'\',true)">✓</button>'+
+          '<button class="poke" style="margin-left:6px;border-color:var(--danger);color:#ffb3c2" onclick="respondPartyTab(\''+r.requester_uid+'\',false)">✕</button></div>';
+      }).join('');
+    }
+    const party=myRes&&myRes.party;
+    if(party&&party.partner){
+      const p=party.partner;
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--cyan);margin:14px 0 8px">ТВОЙ БАДИ</div>';
+      h+='<div class="rankrow" onclick="openPlayerProfile(\''+p.device_id+'\')"><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+' · 🔥'+(p.streak||0)+'</small></div><div class="xp">'+(p.exp||0)+'</div></div>';
+      h+='<div class="addf" style="margin-top:10px;border-color:var(--danger);color:#ffb3c2" onclick="leavePartyTab()">✕ Расстаться с бади</div>';
+    } else if(!reqs.length){
+      h+='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px;line-height:1.6">Нет бади — открой профиль игрока в рейтинге и предложи стать бади</div>';
+    }
+    h+='<div class="addf" style="margin-top:10px" onclick="go(\'guild\');document.querySelector(\'.seg button\').click()">＋ Найти в рейтинге</div>';
+    box.innerHTML=h;
+  }
+  async function respondPartyTab(targetUid,accept){
+    const res=await cloudCall({action:'party_respond',uid:getUid(),target_uid:targetUid,accept});
+    if(res&&res.ok){toast(accept?'✓ Теперь вы бади':'Приглашение отклонено');loadPartyTab();}
+    else toast(res&&res.error==='already has buddy'?'У тебя уже есть бади':'Не удалось ответить');
+  }
+  async function leavePartyTab(){
+    const res=await cloudCall({action:'party_leave',uid:getUid()});
+    if(res&&res.ok){toast('Вы больше не бади');loadPartyTab();}
+  }
+  async function sendPartyInvite(targetUid){
+    const res=await cloudCall({action:'party_invite',uid:getUid(),target_uid:targetUid});
+    if(res&&res.ok){toast('✓ Приглашение в бади отправлено');openPlayerProfile(targetUid);}
+    else toast(res&&res.error==='already has buddy'?'У тебя уже есть бади':'Не удалось отправить приглашение');
+  }
+  async function respondPartyFromProfile(targetUid,accept){
+    const res=await cloudCall({action:'party_respond',uid:getUid(),target_uid:targetUid,accept});
+    if(res&&res.ok){toast(accept?'✓ Теперь вы бади':'Приглашение отклонено');openPlayerProfile(targetUid);}
   }
 
   // ===== ВЕСЬ ТОП =====
