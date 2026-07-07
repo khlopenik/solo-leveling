@@ -33,14 +33,15 @@ ASSETS_DIR = Path(__file__).parent.parent / "assets" / "achievements"
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 # (дней пропущено подряд, картинка, штраф в эксп (флэт))
+# Картинки: 102=24ч, 101=12ч (другой стиль), 105=3д, 106_left=7д, 106_right=14д, 107=финал
 TIERS = [
-    (1, "g7_r0_c0.png", 100),
-    (2, "g7_r0_c1.png", 250),
-    (3, "g7_r1_c0.png", 500),
-    (5, "g7_r0_c3.png", 750),
-    (7, "g7_r1_c1.png", 1000),
-    (14, "g7_r1_c2.png", 1500),
-    (30, "g7_r0_c2.png", 2500),
+    (1,  "ach_102.png",       100),
+    (2,  "ach_101.png",       250),
+    (3,  "ach_105.png",       500),
+    (5,  "ach_105.png",       750),
+    (7,  "ach_106_left.png",  1000),
+    (14, "ach_106_right.png", 1500),
+    (30, "ach_107.png",       2500),
 ]
 
 
