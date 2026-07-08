@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-69';
+  var APP_VERSION='2026-07-08-70';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -774,6 +774,7 @@
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔄 Сбросить объём упражнений и характеристики<br><small style="color:var(--muted)">если ачивки/статы открылись сами по себе</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
+    <div class="priv-row"><span class="pl">📅 Начать отсчёт дня пробуждения заново<br><small style="color:var(--muted)">если только тестировала — день 1 будет с сегодня</small></span><button class="poke" onclick="resetJoinedAt()">Сбросить</button></div>
     <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Удалить аккаунт</span><button class="poke" id="resetBtn" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfileTap(this)">Удалить</button></div>
     <div class="rnote" style="margin-top:8px">Удалит игрока и весь прогресс — локально и в облаке — и откроет создание нового игрока. Нажать дважды для подтверждения.</div>
     <div class="pclose" style="text-align:center" onclick="document.getElementById('setmodal').classList.remove('show')">закрыть</div>
@@ -1810,6 +1811,15 @@
     cloudPush();
     renderCitySetting();
     toast('✓ Город обновлён: '+player.city);
+  }
+  function resetJoinedAt(){
+    if(!player)return;
+    player.joinedAt=today();
+    DB.set('player',player);
+    cloudPush();
+    renderHTitle();
+    document.getElementById('setmodal').classList.remove('show');
+    toast('✓ Отсчёт дня пробуждения начат заново — сегодня день 1');
   }
   function onAvatarReupload(ev){
     const file=ev.target.files&&ev.target.files[0];if(!file)return;
