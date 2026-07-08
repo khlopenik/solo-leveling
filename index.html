@@ -448,6 +448,8 @@
     <label>Дата рождения — год</label><select id="o-dob-y" onchange="syncDob()"></select>
     <input type="hidden" id="o-dob">
     <label>Пол</label><select id="o-sex" onchange="updateKBJUPreview()"><option value="" selected disabled>Выбрать</option><option>Мужской</option><option>Женский</option></select>
+    <label>Город</label><input id="o-city" type="text" placeholder="напр. Москва" autocomplete="off">
+    <p style="color:var(--muted);font-size:11px;margin-top:-8px;margin-bottom:10px;line-height:1.5">Нужен для рейтинга по городу — можно поправить позже в настройках.</p>
     <div class="orow"><div><label>Рост, см</label><input id="o-h" type="number" placeholder="168" oninput="updateKBJUPreview()"></div><div><label>Вес, кг</label><input id="o-w" type="number" placeholder="62" oninput="updateKBJUPreview()"></div></div>
     <label>Цель</label><select id="o-goal" onchange="updateKBJUPreview()"><option>Похудеть</option><option>Поддерживать форму</option><option>Набрать массу</option></select>
     <label>Уровень активности</label><select id="o-act" onchange="updateKBJUPreview()"><option>Новичок (мало двигаюсь)</option><option>Средний (тренируюсь иногда)</option><option>Высокий (активный спорт)</option></select>
@@ -505,6 +507,7 @@
         <div class="expbar"><div class="expfill" id="exp"></div></div>
         <div class="exptext"><span id="expnum">620</span> / <span id="expneed">1000</span> EXP</div>
       </div>
+      <div class="hide" id="statPenaltyBadge" style="text-align:center;color:var(--danger);font-family:'Exo 2';font-size:12px;font-weight:700;margin:4px 0 8px">⚠ Штраф Системы: −<span id="statPenaltyVal">0</span> ко всем характеристикам — закрой день, чтобы снять</div>
       <div class="stats">
         <div class="stat"><div class="k">💪 СИЛА</div><div class="v" id="st-strength">0</div></div>
         <div class="stat"><div class="k">⚡ ЛОВКОСТЬ</div><div class="v" id="st-agility">0</div></div>
@@ -679,6 +682,10 @@
           <span style="color:var(--muted);font-size:12px" id="lb-stat-label">Топ разносторонних · все игроки</span>
           <button class="poke" onclick="openPriv()">🔒 Приватность</button>
         </div>
+        <div class="lb-stat-tabs" id="lbScopeTabs">
+          <button class="on" onclick="setLbScope(this,'world')">🌍 Мир</button>
+          <button onclick="setLbScope(this,'city')">📍 Мой город</button>
+        </div>
         <div class="lb-stat-tabs" id="lbStatTabs">
           <button class="on" onclick="setLbStat(this,null)">⚖ Общий</button>
           <button onclick="setLbStat(this,'strength')">💪 Сила</button>
@@ -754,6 +761,7 @@
     <div class="pn" style="text-align:center">⚙ Настройки</div>
     <div class="pr" style="text-align:center;margin-bottom:14px">Игрок и приложение</div>
     <div class="priv-row"><span class="pl">✏️ Имя игрока</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');renamePlayer()">Изменить</button></div>
+    <div class="priv-row"><span class="pl">📍 Город</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');editCity()">Изменить</button></div>
     <div class="priv-row"><span class="pl">🎴 Аватар (аниме)</span><button class="poke" onclick="document.getElementById('avatar-reupload').click()">Загрузить</button></div>
     <input type="file" accept="image/*" id="avatar-reupload" style="display:none" onchange="onAvatarReupload(event)">
     <div class="priv-row"><span class="pl">🔗 Вход на компьютере</span><button class="poke" onclick="openLinkModal()">Открыть</button></div>
@@ -770,6 +778,7 @@
     <div class="ach-x" onclick="document.getElementById('qbmodal').classList.remove('show')">✕</div>
     <div class="pn" style="text-align:center">⚙ Настрой свой квест</div>
     <div class="pr" style="text-align:center;margin-bottom:6px">Выбери минимум 1 упражнение из каждой категории. Можно добавить свои.</div>
+    <div class="pr" style="text-align:center;margin-bottom:10px;color:var(--gold);font-size:12px;line-height:1.5">⚠ Ставь «старт:» честно — сколько реально можешь делать каждый день. Кто ставит больше, тот и получает больше XP за то же упражнение. Планка растёт вместе с уровнем — врать себе не выгодно.</div>
     <div id="qb-body"></div>
     <div style="margin-top:10px">
       <div style="font-family:'Exo 2';font-size:12px;color:var(--cyan);margin-bottom:6px">＋ Своё упражнение</div>
@@ -991,7 +1000,7 @@
 
 <script>
   try{if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}}catch(e){}
-  let exp=0,lvl=1,need=1000,streak=0,streakBest=0,streakDate=null;
+  let exp=0,lvl=1,need=2500,streak=0,streakBest=0,streakDate=null,lastFullDayAt=null,statPenalty=0;
   const ranks=[[1,'E'],[10,'D'],[20,'C'],[35,'B'],[50,'A'],[70,'S'],[100,'SSS']];
   function rankFor(l){let r='E';for(const[min,name]of ranks)if(l>=min)r=name;return r;}
   // ===== Эффективный ранг: повышается не раньше чем раз в месяц, даже если уровень уже выше =====
@@ -1012,13 +1021,23 @@
     }
   }
   function levelForRank(rankName){const e=ranks.find(r=>r[1]===rankName);return e?e[0]:1;}
-  function needForLevel(targetLvl){let n=1000;for(let i=1;i<targetLvl;i++)n=Math.round(n*1.15);return n;}
+  // старт ~2 недели на первый уровень при обычном темпе (пара упражнений в день),
+  // дальше требование растёт всё медленнее (тейперинг с 16% до 5% за уровень),
+  // чтобы прокачка не растягивалась на годы к высоким уровням
+  function needForLevel(targetLvl){
+    let n=2500;
+    for(let i=1;i<targetLvl;i++){
+      const growth=Math.max(1.05,1.16-i*0.003);
+      n=Math.round(n*growth);
+    }
+    return n;
+  }
   // ===== Хранилище (localStorage; позже заменим на Supabase) =====
   const DB={get(k,d){try{const v=localStorage.getItem('sl_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
     set(k,v){try{localStorage.setItem('sl_'+k,JSON.stringify(v));return true}catch(e){console.error('DB.set failed for',k,e);if(typeof toast==='function')toast('⚠ Не хватило места в памяти телефона — попробуй фото поменьше');return false}}};
   const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
   let player=DB.get('player',null);
-  function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});cloudPush();}
+  function saveProgress(){DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate,lastFullDayAt});cloudPush();}
   function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function checkStreak(){
@@ -1029,7 +1048,7 @@
     if(allDone){
       if(streakDate!==today()){
         streak=(streakDate===yesterday())?streak+1:1;
-        streakDate=today();if(streak>streakBest)streakBest=streak;
+        streakDate=today();lastFullDayAt=new Date().toISOString();if(streak>streakBest)streakBest=streak;
         saveProgress();renderDays();renderStreak();toast('🔥 День засчитан! Серия: '+streak);
       }
       upgradeExtrasToFullXp();
@@ -1046,7 +1065,9 @@
   let stats=DB.get('stats',{strength:0,agility:0,health:0,intellect:0,will:0,endurance:0});
   function saveStats(){DB.set('stats',stats);cloudPush();}
   function renderStats(){
-    ['strength','agility','health','intellect','will','endurance'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=stats[s]||0;});
+    ['strength','agility','health','intellect','will','endurance'].forEach(s=>{const el=document.getElementById('st-'+s);if(el)el.textContent=Math.max(0,(stats[s]||0)-statPenalty);});
+    const badge=document.getElementById('statPenaltyBadge');
+    if(badge){badge.classList.toggle('hide',!(statPenalty>0));const v=document.getElementById('statPenaltyVal');if(v)v.textContent=statPenalty;}
     renderProfession();
   }
   const sphereOf={'💪 Сила':'strength','⚡ Ловкость':'agility','🏃 Выносливость':'endurance','🧠 Интеллект':'intellect','❤️ Здоровье':'health','🕯️ Дух Воли':'will'};
@@ -1064,20 +1085,21 @@
     catch(e){return {error:String(e)};}
   }
   function cloudState(){
-    return {name:player&&player.name,player,level:lvl,exp,need,rank:currentRank(),streak,streakBest,streakDate,stats,
+    return {name:player&&player.name,player,level:lvl,exp,need,rank:currentRank(),streak,streakBest,streakDate,lastFullDayAt,stats,
       habitsCloud:DB.get('habits',null),weightLogCloud:DB.get('weightLog',[]),bodyMetricsCloud:DB.get('bodyMetrics',null),measurementsCloud:DB.get('measurements',[])};
   }
   let pushT;
   function cloudPush(){if(!player)return;clearTimeout(pushT);pushT=setTimeout(()=>{cloudCall({action:'push',uid:getUid(),name:player.name,state:cloudState()}).then(()=>{if(typeof loadLeaderboard==='function')loadLeaderboard();});},800);}
   function hydrate(s){
     if(!s)return;player=s.player||{name:s.name};DB.set('player',player);
-    exp=s.exp||0;lvl=s.level||1;need=s.need||1000;streak=s.streak||0;streakBest=s.streakBest||0;
+    exp=s.exp||0;lvl=s.level||1;need=s.need||needForLevel(lvl);streak=s.streak||0;streakBest=s.streakBest||0;
     // дату последнего зачтённого дня берём из облака (если есть), иначе из локального прогресса — иначе серия слетает на новом устройстве
     streakDate=s.streakDate||DB.get('progress',{}).streakDate||null;
+    lastFullDayAt=s.lastFullDayAt||DB.get('progress',{}).lastFullDayAt||null;
     // если последний зачтённый день не сегодня и не вчера — серия прервана, обнуляем
     if(streakDate&&streakDate!==today()&&streakDate!==yesterday()){streak=0;streakDate=null;}
     stats=s.stats||{strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};
-    DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate});DB.set('stats',stats);
+    DB.set('progress',{exp,lvl,need,streak,streakBest,streakDate,lastFullDayAt});DB.set('stats',stats);
     if(s.habitsCloud&&!DB.get('habits',null)){habits=s.habitsCloud;DB.set('habits',habits);}
     // история веса: объединяем локальную и облачную по дате (одна запись на день), чтобы ничего не терялось между сессиями/устройствами
     if(Array.isArray(s.weightLogCloud)&&s.weightLogCloud.length){
@@ -1100,16 +1122,15 @@
     loadWeightLog();drawChart();loadMeasurements();
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
-  const COMEBACK_BONUS=20; // фикс. бонус-"статуя" за возврат, всегда меньше минимального штрафа (100) — итог всегда минус
+  // штраф за неактивность (scripts/check_inactivity.py) — не списание XP, а временный дебафф
+  // характеристик (pending_penalty = сколько сейчас снято с каждого стата), снимается ботом
+  // автоматически, как только игрок закрывает день заново
   function applyPendingPenalty(row){
     const gross=row&&+row.pending_penalty||0;
-    if(gross<=0)return;
-    const net=Math.max(0,gross-COMEBACK_BONUS);
-    const before=exp;
-    exp=Math.max(0,exp-net);
-    saveProgress();render();
-    toast('🗿 Статуя заметила твоё возвращение, но просадку не простила: −'+net+' эксп ('+before+' → '+exp+')');
-    cloudCall({action:'ack_penalty',uid:getUid()});
+    if(statPenalty===gross)return;
+    statPenalty=gross;
+    renderStats();
+    if(gross>0)toast('🗿 Штраф Системы: −'+gross+' ко всем характеристикам, пока не закроешь день заново');
   }
   async function cloudInit(){
     if(!player){
@@ -1121,6 +1142,7 @@
       cloudCall({action:'pull',uid:getUid()}).then(res=>{if(res&&res.player)applyPendingPenalty(res.player);});
     }
     loadLeaderboard();
+    refreshCityRank();
     if(player&&qSel.size)setTimeout(showQuestReceived,400);
     refreshFriendBell();
     setInterval(refreshFriendBell,90000); // проверяем новые заявки в друзья каждые 1.5 минуты
@@ -1140,21 +1162,37 @@
   }
   const LB_STAT_LABELS={strength:'Топ по Силе',agility:'Топ по Ловкости',health:'Топ по Здоровью',intellect:'Топ по Интеллекту',will:'Топ по Духу воли',endurance:'Топ по Выносливости'};
   let lbCurStat=null;
+  let lbScope='world'; // 'world' | 'city'
   function setLbStat(btn,stat){
     btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
     lbCurStat=stat;
-    const lbl=document.getElementById('lb-stat-label');
-    if(lbl)lbl.textContent=stat?LB_STAT_LABELS[stat]+' · все игроки':'Топ разносторонних · все игроки';
+    updateLbLabel();
     loadLeaderboard();
+  }
+  function setLbScope(btn,scope){
+    if(scope==='city'&&!(player&&player.city)){toast('⚠ Укажи город в настройках, чтобы видеть рейтинг по городу');return;}
+    btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    lbScope=scope;
+    updateLbLabel();
+    loadLeaderboard();
+  }
+  function updateLbLabel(){
+    const lbl=document.getElementById('lb-stat-label');if(!lbl)return;
+    const base=lbCurStat?LB_STAT_LABELS[lbCurStat]:'Топ разносторонних';
+    const scopeLbl=lbScope==='city'?('город '+(player&&player.city||'')):'все игроки';
+    lbl.textContent=base+' · '+scopeLbl;
   }
   async function loadLeaderboard(){
     const box=document.getElementById('lb-list');if(!box)return;
-    const res=await cloudCall({action:'leaderboard',stat:lbCurStat});
+    const cityParam=lbScope==='city'?(player&&player.city):undefined;
+    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam});
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
-    if(!lbCurStat){myRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');}
+    if(!lbCurStat&&lbScope==='world'){myRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');}
+    if(!lbCurStat&&lbScope==='city'){myCityRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');}
     let h=top.slice(0,10).map((p,i)=>{
       const me=(p.name===myName)?' me':'';const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
       const click=p.device_id?' onclick="openPlayerProfile(\''+p.device_id+'\')"':'';
@@ -1284,7 +1322,7 @@
     if(Date.now()>q.deadline){q.status='expired';DB.set('player',player);renderSurpriseQuest();toast('⌛ Время уже истекло');return;}
     const awarded=Math.round(q.xp*streakXpMultiplier(streak));
     exp+=awarded;stats[q.sphere]=(stats[q.sphere]||0)+1;
-    if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);}
+    while(exp>=need){exp-=need;lvl++;need=needForLevel(lvl);levelUpFx(lvl);}
     q.status='done';DB.set('player',player);
     saveStats();renderStats();saveProgress();render();
     if(surpriseTickId){clearInterval(surpriseTickId);surpriseTickId=null;}
@@ -1328,7 +1366,7 @@
       el.dataset.awarded=awarded;
       el.classList.add('done');exp+=awarded;
       if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(\d+)(.*)\]/,(m,a,b,r)=>'['+b+'/'+b+r+']');
-      if(exp>=need){exp-=need;lvl++;need=Math.round(need*1.15);levelUpFx(lvl);toast('⬆ LEVEL UP! Уровень '+lvl);}
+      if(exp>=need){while(exp>=need){exp-=need;lvl++;need=needForLevel(lvl);levelUpFx(lvl);}toast('⬆ LEVEL UP! Уровень '+lvl);}
       else toast('+'+awarded+' XP'+(mult>1?' (×'+mult.toFixed(2)+')':''));
       if(isExtra)setExtraAwarded(nm0,awarded);
     }
@@ -1396,6 +1434,30 @@
     exerciseTotals[name]=Math.max(0,(exerciseTotals[name]||0)+delta);
     DB.set('exerciseTotals',exerciseTotals);
   }
+  // ===== АЧИВКИ: EXP ЗА РАЗБЛОКИРОВКУ (разово, каждая ачивка — свой ключ) =====
+  // Важно: бонус от ачивки НИКОГДА не пересекает границу уровня сам по себе —
+  // заполняет шкалу максимум до need-1, левел-ап всё равно только от квестов.
+  let earnedAch=new Set();
+  function loadEarnedAch(){earnedAch=new Set(DB.get('earnedAch',[]));}
+  function saveEarnedAch(){DB.set('earnedAch',[...earnedAch]);}
+  function awardAchXp(n){
+    if(!(n>0))return;
+    exp=Math.min(need-1,exp+n);
+    saveProgress();
+  }
+  function processNewAchievements(groups){
+    const fresh=[];
+    groups.forEach(g=>g.items.forEach(a=>{
+      if(a.un&&a.key&&!earnedAch.has(a.key)){earnedAch.add(a.key);fresh.push(a);}
+    }));
+    if(fresh.length){
+      saveEarnedAch();
+      fresh.forEach(a=>{if(a.xp)awardAchXp(a.xp);});
+      render();
+      fresh.forEach(a=>toast('🏆 '+a.n+(a.xp?' +'+a.xp+' XP':'')));
+    }
+  }
+  let myFriendsCount=0;
   function go(name){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('s-'+name).classList.add('active');
@@ -1686,6 +1748,15 @@
     cloudPush();
     toast('✓ Имя обновлено: '+player.name);
   }
+  function editCity(){
+    if(!player)return;
+    const city=prompt('Город (для рейтинга по региону)', player.city||'');
+    if(!city||!city.trim())return;
+    player.city=city.trim();
+    DB.set('player',player);
+    cloudPush();
+    toast('✓ Город обновлён: '+player.city);
+  }
   function onAvatarReupload(ev){
     const file=ev.target.files&&ev.target.files[0];if(!file)return;
     const reader=new FileReader();
@@ -1822,6 +1893,8 @@
     if(dob){const d=new Date(dob),t=new Date();age=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))age--;}
     const sex=document.getElementById('o-sex').value;
     if(!sex){toast('⚠ Выбери пол');return;}
+    const city=(document.getElementById('o-city').value||'').trim();
+    if(!city){toast('⚠ Укажи город — без него не посчитать рейтинг по региону');return;}
     wGoal=Math.round(w*30/50)*50;
     // если до полуночи остаётся меньше 2 часов — первый день квеста не урезаем,
     // а считаем его с завтрашней даты (полные 24 часа на сборку квеста)
@@ -1830,14 +1903,14 @@
     if(startsNextDay)secs=secsUntilMidnight()+86400;
     const awakeningMode=document.getElementById('o-awakening-mode').value;
     player={name,dob,sex,height:+document.getElementById('o-h').value||168,weight:w,
-      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today(),
+      goal:document.getElementById('o-goal').value,activity:document.getElementById('o-act').value,wGoal,joinedAt:startsNextDay?tomorrow():today(),city,
       awakeningMode,effectiveRank:'E',rankChangedAt:today()};
     if(awakeningMode==='test'){player.awakeningStart=today();player.awakeningDays=[];player.awakeningDone=false;}
     else player.awakeningDone=true;
     if(avatarThumb)player.avatarUrl=avatarThumb; // сжатое фото — безопасно для localStorage, держится сразу даже если ИИ-стилизация не сработает
     DB.set('player',player);
     // новый игрок начинает с нуля
-    exp=0;lvl=1;need=1000;saveProgress();
+    exp=0;lvl=1;need=needForLevel(1);saveProgress();
     stats={strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};saveStats();renderStats();
     DB.set('progress',{exp,lvl,need,streak:0,streakBest:0,streakDate:null});streak=0;
     logWeightEntry(w); // вес сразу виден в Системе и Прогрессе, не дожидаясь анализа фото
@@ -1919,7 +1992,7 @@
     initDobSelects();
     // прогресс
     const pr=DB.get('progress',null);
-    if(pr){exp=pr.exp;lvl=pr.lvl;need=pr.need;streak=pr.streak||0;streakBest=pr.streakBest||0;streakDate=pr.streakDate||null;}
+    if(pr){exp=pr.exp;lvl=pr.lvl;need=pr.need;streak=pr.streak||0;streakBest=pr.streakBest||0;streakDate=pr.streakDate||null;lastFullDayAt=pr.lastFullDayAt||null;}
     if(streakDate&&streakDate!==today()&&streakDate!==yesterday()){streak=0;streakDate=null;saveProgress();}
     // квест-конфиг
     const qs=DB.get('qsel',null);if(qs){qSel=new Set(qs);}
@@ -1933,6 +2006,7 @@
     loadWeightLog();
     loadMeasurements();
     loadExerciseTotals();
+    loadEarnedAch();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
@@ -2422,6 +2496,15 @@
   // ===== ДОСТИЖЕНИЯ (общий список, используется в Профиле и Прогрессе) =====
   const ACH_DIR='assets/achievements/';
   let myRankPos=null;
+  let myCityRankPos=null;
+  async function refreshCityRank(){
+    if(!player||!player.city)return;
+    const res=await cloudCall({action:'leaderboard',city:player.city});
+    const top=(res&&res.top)||[];
+    const myPos=top.findIndex(p=>p.name===player.name);
+    myCityRankPos=myPos>=0?myPos+1:null;
+    renderAch('progAch');renderAch('profAch');
+  }
   // привязка иконок-упражнений сверена вручную с реальной подписью на каждой картинке
   // (название/порог/EXP нарисованы прямо на самой карточке — это сверено визуально).
   // un считается ТОЛЬКО по тому, что реально накапливается в exerciseTotals — остальные
@@ -2429,125 +2512,134 @@
   // честно остаются заблокированными, без выдуманных условий.
   // unit: ед.измерения для отображения; cardName/cardReq/cardExp — точно с картинки.
   const EXERCISE_ACH_MAP={
-    // === БАЗОВЫЕ (зелёный стиль, 015-027) ===
-    'ach_015':['Приседания',30,'раз','ТЕНЬ ПРИСЕДАЕТ',100],
-    'ach_016':['Приседания',100,'раз','ПОВЕЛИТЕЛЬ ПРИСЕДАНИЙ',250],
-    'ach_017':['Бег',3,'км','СКОРОСТЬ ТЕНИ',100],
-    'ach_018':['Бег',7,'км','НЕУЛОВИМЫЙ ОХОТНИК',250],
-    'ach_019':['Шаги',8000,'шагов','ШАГ ЗА ШАГОМ',100],
-    'ach_020':['Шаги',15000,'шагов','ПУТЬ ОХОТНИКА',250],
-    'ach_021':['Планка',60,'сек','НЕПОДВИЖНАЯ ТЕНЬ',100],
-    'ach_022':['Планка',180,'сек','СТАЛЬНОЙ ДУХ',250],
-    'ach_023':['Отжимания',20,'раз','СИЛА ТЕНИ',100],
-    'ach_024':['Отжимания',60,'раз','НЕСОКРУШИМЫЙ',250],
-    'ach_025':['Пресс',30,'раз','ПРОБУЖДЕНИЕ ЯДРА',100],
-    'ach_026':['Пресс',100,'раз','ЯДРО ОХОТНИКА',250],
-    'ach_027':['__alldone__',1,'','ЕЖЕДНЕВНАЯ ПОБЕДА',500],
+    // === БАЗОВЫЕ (зелёный стиль, 015-027) — [упражнение,цель,ед.,название,XP] ===
+    'ach_015':['Приседания',30,'раз','ТЕНЬ ПРИСЕДАЕТ',20],
+    'ach_016':['Приседания',100,'раз','ПОВЕЛИТЕЛЬ ПРИСЕДАНИЙ',50],
+    'ach_017':['Бег',3,'км','СКОРОСТЬ ТЕНИ',20],
+    'ach_018':['Бег',7,'км','НЕУЛОВИМЫЙ ОХОТНИК',50],
+    'ach_019':['Шаги',8000,'шагов','ШАГ ЗА ШАГОМ',20],
+    'ach_020':['Шаги',15000,'шагов','ПУТЬ ОХОТНИКА',50],
+    'ach_021':['Планка',60,'сек','НЕПОДВИЖНАЯ ТЕНЬ',20],
+    'ach_022':['Планка',180,'сек','СТАЛЬНОЙ ДУХ',50],
+    'ach_023':['Отжимания',20,'раз','СИЛА ТЕНИ',20],
+    'ach_024':['Отжимания',60,'раз','НЕСОКРУШИМЫЙ',50],
+    'ach_025':['Пресс',30,'раз','ПРОБУЖДЕНИЕ ЯДРА',20],
+    'ach_026':['Пресс',100,'раз','ЯДРО ОХОТНИКА',50],
+    'ach_027':['__alldone__',1,'','ЕЖЕДНЕВНАЯ ПОБЕДА',80],
     // === РАСШИРЕННЫЕ (синий стиль, 028-049) ===
-    'ach_028':['Подтягивания',10,'раз','ПОДТЯГИВАНИЯ',250],
-    'ach_029':['Отжимания',50,'раз','ОТЖИМАНИЯ',100],
-    'ach_030':['Брусья',20,'раз','БРУСЬЯ',250],
-    'ach_031':['Прыжки на плиометрику',30,'прыжков','ПРЫЖКИ НА ПЛИОМЕТРИКУ',150],
-    'ach_032':['Прыжки на скакалке',5,'мин','ПРЫЖКИ НА СКАКАЛКЕ',100],
-    'ach_033':['Жим гантелей',30,'раз','ЖИМ ГАНТЕЛЕЙ',100],
-    'ach_034':['Выпады',40,'раз','ВЫПАДЫ',150],
-    'ach_035':['Альпинист',2,'мин','АЛЬПИНИСТ',100],
-    'ach_036':['Приседания',50,'раз','ПРИСЕДАНИЯ С ВЕСОМ',150],
-    'ach_037':['Махи гирей',50,'раз','МАХИ ГИРЕЙ',150],
-    'ach_038':['Боковая планка',2,'мин','БОКОВАЯ ПЛАНКА',100],
-    'ach_039':['Берпи',30,'раз','БЁРПИ',250],
-    'ach_040':['Подъёмы ног',20,'раз','ПОДЪЁМЫ НОГ',150],
-    'ach_041':['Пресс',60,'раз','СКРУЧИВАНИЯ',100],
-    'ach_042':['Ягодичный мост',30,'раз','ЯГОДИЧНЫЙ МОСТ',100],
-    'ach_043':['Стойка на руках',30,'сек','СТОЙКА НА РУКАХ',250],
-    'ach_044':['Бой с тенью',5,'мин','БОКС С ТЕНЬЮ',100],
-    'ach_045':['Тяни сани',20,'метров','ТЯНИ САНИ',250],
-    'ach_046':['Стулик у стены',2,'мин','СТУЛИК У СТЕНЫ',100],
-    'ach_047':['Медвежья проходка',20,'метров','МЕДВЕЖЬЯ ПРОХОДКА',150],
-    'ach_048':['Подъёмы на носки',100,'раз','ПОДЪЁМЫ НА НОСКИ',100],
-    'ach_049':['Спринт',10,'раз','СПРИНТ',250],
+    'ach_028':['Подтягивания',10,'раз','ПОДТЯГИВАНИЯ',50],
+    'ach_029':['Отжимания',50,'раз','ОТЖИМАНИЯ',20],
+    'ach_030':['Брусья',20,'раз','БРУСЬЯ',50],
+    'ach_031':['Прыжки на плиометрику',30,'прыжков','ПРЫЖКИ НА ПЛИОМЕТРИКУ',30],
+    'ach_032':['Прыжки на скакалке',5,'мин','ПРЫЖКИ НА СКАКАЛКЕ',20],
+    'ach_033':['Жим гантелей',30,'раз','ЖИМ ГАНТЕЛЕЙ',20],
+    'ach_034':['Выпады',40,'раз','ВЫПАДЫ',30],
+    'ach_035':['Альпинист',2,'мин','АЛЬПИНИСТ',20],
+    'ach_036':['Приседания',50,'раз','ПРИСЕДАНИЯ С ВЕСОМ',30],
+    'ach_037':['Махи гирей',50,'раз','МАХИ ГИРЕЙ',30],
+    'ach_038':['Боковая планка',2,'мин','БОКОВАЯ ПЛАНКА',20],
+    'ach_039':['Берпи',30,'раз','БЁРПИ',50],
+    'ach_040':['Подъёмы ног',20,'раз','ПОДЪЁМЫ НОГ',30],
+    'ach_041':['Пресс',60,'раз','СКРУЧИВАНИЯ',20],
+    'ach_042':['Ягодичный мост',30,'раз','ЯГОДИЧНЫЙ МОСТ',20],
+    'ach_043':['Стойка на руках',30,'сек','СТОЙКА НА РУКАХ',50],
+    'ach_044':['Бой с тенью',5,'мин','БОКС С ТЕНЬЮ',20],
+    'ach_045':['Тяни сани',20,'метров','ТЯНИ САНИ',50],
+    'ach_046':['Стулик у стены',2,'мин','СТУЛИК У СТЕНЫ',20],
+    'ach_047':['Медвежья проходка',20,'метров','МЕДВЕЖЬЯ ПРОХОДКА',30],
+    'ach_048':['Подъёмы на носки',100,'раз','ПОДЪЁМЫ НА НОСКИ',20],
+    'ach_049':['Спринт',10,'раз','СПРИНТ',50],
     // === СМЕШАННЫЕ (053-076, без дублей 050-052, 059, 062-063, 069, 071-072, 075) ===
-    'ach_053':['Прыжки на тумбу',30,'прыжков','ПРЫЖКИ НА ТУМБУ',150],
-    'ach_054':['Прыжки на скакалке',10,'мин','ПРЫЖКИ СО СКАКАЛКОЙ',150],
-    'ach_055':['Жим гантелей стоя',30,'раз','ЖИМ ГАНТЕЛЕЙ СТОЯ',100],
-    'ach_056':['Планка на локтях',3,'мин','ПЛАНКА НА ЛОКТЯХ',250],
-    'ach_060':['Выпады в сторону',20,'раз','ВЫПАДЫ В СТОРОНУ',150],
-    'ach_061':['Выпады вперёд',20,'раз','ВЫПАДЫ ВПЕРЁД',150],
-    'ach_064':['Холлоу холд',1,'мин','ХОЛЛОУ ХОЛД',150],
-    'ach_065':['Подъём ног в висе',20,'раз','ПОДЪЁМ НОГ В ВИСЕ',250],
-    'ach_066':['Русские скручивания',100,'раз','РУССКИЕ СКРУЧИВАНИЯ',100],
-    'ach_067':['Велосипед',2,'мин','ВЕЛОСИПЕД',100],
-    'ach_068':['Бой с тенью',10,'мин','БОЙ С ТЕНЬЮ',150],
-    'ach_070':['Подъём по лестнице',20,'этажей','ПОДЪЁМ ПО ЛЕСТНИЦЕ',150],
-    'ach_073':['Йога',15,'мин','ЙОГА / МОБИЛЬНОСТЬ',150],
-    'ach_074':['Приседания',75,'раз','ГЛУБОКИЕ ПРИСЕДАНИЯ',150],
-    'ach_076':['Спринт',8,'раз','СПРИНТЫ 50М',250],
+    'ach_053':['Прыжки на тумбу',30,'прыжков','ПРЫЖКИ НА ТУМБУ',30],
+    'ach_054':['Прыжки на скакалке',10,'мин','ПРЫЖКИ СО СКАКАЛКОЙ',30],
+    'ach_055':['Жим гантелей стоя',30,'раз','ЖИМ ГАНТЕЛЕЙ СТОЯ',20],
+    'ach_056':['Планка на локтях',3,'мин','ПЛАНКА НА ЛОКТЯХ',50],
+    'ach_060':['Выпады в сторону',20,'раз','ВЫПАДЫ В СТОРОНУ',30],
+    'ach_061':['Выпады вперёд',20,'раз','ВЫПАДЫ ВПЕРЁД',30],
+    'ach_064':['Холлоу холд',1,'мин','ХОЛЛОУ ХОЛД',30],
+    'ach_065':['Подъём ног в висе',20,'раз','ПОДЪЁМ НОГ В ВИСЕ',50],
+    'ach_066':['Русские скручивания',100,'раз','РУССКИЕ СКРУЧИВАНИЯ',20],
+    'ach_067':['Велосипед',2,'мин','ВЕЛОСИПЕД',20],
+    'ach_068':['Бой с тенью',10,'мин','БОЙ С ТЕНЬЮ',30],
+    'ach_070':['Подъём по лестнице',20,'этажей','ПОДЪЁМ ПО ЛЕСТНИЦЕ',30],
+    'ach_073':['Йога',15,'мин','ЙОГА / МОБИЛЬНОСТЬ',30],
+    'ach_074':['Приседания',75,'раз','ГЛУБОКИЕ ПРИСЕДАНИЯ',30],
+    'ach_076':['Спринт',8,'раз','СПРИНТЫ 50М',50],
   };
   function getExerciseAchItems(){
     return Object.entries(EXERCISE_ACH_MAP).map(([imgKey,map])=>{
-      const[ex,need,unit,cardName]=map;
-      let un=false,req,reward='Открывает значок в коллекции';
+      const[ex,need,unit,cardName,xp]=map;
+      let un=false,req;
       if(ex==='__alldone__'){un=isMainQuestDoneToday();req='Выполни весь квест на 100% один день';}
       else{un=(exerciseTotals[ex]||0)>=need;req='Суммарно '+need+' '+unit+' ('+ex+')';}
-      return{img:imgKey,un,n:cardName,req,reward};
+      return{img:imgKey,key:imgKey,un,n:cardName,req,reward:'+'+xp+' XP разово',xp};
     });
   }
   function getAchGroups(){
     const habitDays=habits&&habits.length?Math.max(...habits.map(h=>Math.max(0,Math.floor((Date.now()-new Date(h.startDate))/86400000)))):0;
     const pos=myRankPos;
+    const cityPos=myCityRankPos;
     return [
-      {title:'Достижения',items:[
-        {img:'g1_r0_c0',un:true,n:'Добро пожаловать',req:'Выдаётся всем при регистрации',reward:'Открывает значок в коллекции'},
-        {img:'g1_r0_c1',un:streak>=1,n:'Первый шаг',req:'Выполни квест на 100% один день',reward:'Открывает значок в коллекции'},
-        {img:'g1_r0_c2',un:streak>=3,n:'Разгон',req:'Серия 3 дня подряд',reward:'Открывает значок в коллекции'},
-        {img:'g1_r0_c3',un:streak>=7,n:'Неделя силы',req:'Серия 7 дней подряд',reward:'+5% к XP за день (серия 7+)'},
-        {img:'g1_r0_c4',un:streak>=10,n:'Десятка',req:'Серия 10 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g1_r1_c0',un:streak>=21,n:'Привычка',req:'Серия 21 день подряд',reward:'Открывает значок в коллекции'},
-        {img:'g1_r1_c1',un:streak>=1,n:'Огонёк',req:'Серия 1 день',reward:'Открывает значок в коллекции'},
-        {img:'g1_r1_c2',un:streak>=30,n:'Месяц дисциплины',req:'Серия 30 дней подряд',reward:'+15% к XP за день (серия 30+)'},
-        {img:'g1_r1_c3',un:false,n:'Загадка',req:'Скоро откроется',reward:'?'},
-        {img:'g1_r1_c4',un:lvl>=2,n:'Новый уровень',req:'Достигни 2 уровня',reward:'Открывает значок в коллекции'},
-        {img:'g1_r2_c0',un:streak>=5,n:'Пятидневка',req:'Серия 5 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g1_r2_c1',un:false,n:'Загадка',req:'Скоро откроется',reward:'?'},
-        {img:'g1_r2_c2',un:streakBest>=14,n:'Рекордсмен',req:'Лучшая серия — 14 дней',reward:'Открывает значок в коллекции'},
-        {img:'g1_r2_c3',un:streak>=90,n:'Три месяца',req:'Серия 90 дней подряд',reward:'+20% к XP за день (серия 90+)'},
-        {img:'g1_r2_c4',un:streak>=180,n:'Полгода',req:'Серия 180 дней подряд',reward:'+25% к XP за день (серия 180+)'},
-      ]},
       {title:'Серия дней',items:[
-        {img:'g5_r0_c0',un:streak>=1,n:'1 день',req:'Серия 1 день подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r0_c1',un:streak>=3,n:'3 дня',req:'Серия 3 дня подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r0_c2',un:streak>=7,n:'7 дней',req:'Серия 7 дней подряд',reward:'+5% к XP за день'},
-        {img:'g5_r0_c3',un:streak>=14,n:'14 дней',req:'Серия 14 дней подряд',reward:'+10% к XP за день'},
-        {img:'g5_r0_c4',un:streak>=21,n:'21 день',req:'Серия 21 день подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r0_c5',un:streak>=30,n:'30 дней',req:'Серия 30 дней подряд',reward:'+15% к XP за день'},
-        {img:'g5_r0_c6',un:streak>=45,n:'45 дней',req:'Серия 45 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r1_c0',un:streak>=60,n:'60 дней',req:'Серия 60 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r1_c1',un:streak>=90,n:'90 дней',req:'Серия 90 дней подряд',reward:'+20% к XP за день'},
-        {img:'g5_r1_c2',un:streak>=120,n:'120 дней',req:'Серия 120 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r1_c3',un:streak>=150,n:'150 дней',req:'Серия 150 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r1_c4',un:streak>=180,n:'180 дней',req:'Серия 180 дней подряд',reward:'+25% к XP за день'},
-        {img:'g5_r1_c5',un:streak>=210,n:'210 дней',req:'Серия 210 дней подряд',reward:'Открывает значок в коллекции'},
-        {img:'g5_r1_c6',un:streak>=365,n:'365 дней',req:'Серия 365 дней подряд',reward:'+30% к XP за день (максимум)'},
+        {img:'ach_077',key:'streak_1',un:streak>=1,n:'Первый шаг',req:'Серия 1 день подряд',reward:'+50 XP разово',xp:50},
+        {img:'ach_078',key:'streak_3',un:streak>=3,n:'Вход в привычку',req:'Серия 3 дня подряд',reward:'+100 XP разово',xp:100},
+        {img:'ach_079',key:'streak_7',un:streak>=7,n:'Неделя силы',req:'Серия 7 дней подряд',reward:'+200 XP разово, +5% к XP за день (пассивно)',xp:200},
+        {img:'ach_080',key:'streak_14',un:streak>=14,n:'Две недели стали',req:'Серия 14 дней подряд',reward:'+300 XP разово, +10% к XP за день (пассивно)',xp:300},
+        {img:'ach_081',key:'streak_21',un:streak>=21,n:'Три недели пути',req:'Серия 21 день подряд',reward:'+500 XP разово',xp:500},
+        {img:'ach_082',key:'streak_30',un:streak>=30,n:'Месяц дисциплины',req:'Серия 30 дней подряд',reward:'+750 XP разово, +15% к XP за день (пассивно)',xp:750},
+        {img:'ach_083',key:'streak_45',un:streak>=45,n:'Несокрушимый',req:'Серия 45 дней подряд',reward:'+1000 XP разово',xp:1000},
+        {img:'ach_084',key:'streak_60',un:streak>=60,n:'Проверен силой',req:'Серия 60 дней подряд',reward:'+1500 XP разово',xp:1500},
+        {img:'ach_085',key:'streak_90',un:streak>=90,n:'Легенда начинается',req:'Серия 90 дней подряд',reward:'+2000 XP разово, +20% к XP за день (пассивно)',xp:2000},
+        {img:'ach_086',key:'streak_120',un:streak>=120,n:'Хранитель дисциплины',req:'Серия 120 дней подряд',reward:'+3000 XP разово',xp:3000},
+        {img:'ach_087',key:'streak_150',un:streak>=150,n:'Истинный охотник',req:'Серия 150 дней подряд',reward:'+5000 XP разово',xp:5000},
+        {img:'ach_088',key:'streak_180',un:streak>=180,n:'Владыка привычек',req:'Серия 180 дней подряд',reward:'+7500 XP разово, +25% к XP за день (пассивно)',xp:7500},
+        {img:'ach_089',key:'streak_210',un:streak>=210,n:'Беспрецедентный',req:'Серия 210 дней подряд',reward:'+10000 XP разово',xp:10000},
+        {img:'ach_090',key:'streak_365',un:streak>=365,n:'Легенда года',req:'Серия 365 дней подряд',reward:'+20000 XP разово, +30% к XP за день (максимум, пассивно)',xp:20000},
       ]},
       {title:'Упражнения',items:getExerciseAchItems()},
-      {title:'Характеристики',items:[
-        {em:'💪',n:'Силач',req:'Сила ≥ 20',reward:'Открывает значок в коллекции',un:stats.strength>=20},
-        {em:'⚡',n:'Ловкач',req:'Ловкость ≥ 20',reward:'Открывает значок в коллекции',un:stats.agility>=20},
-        {em:'🧠',n:'Интеллект',req:'Интеллект ≥ 20',reward:'Открывает значок в коллекции',un:stats.intellect>=20},
-        {em:'❤️',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'Открывает значок в коллекции',un:stats.health>=20},
-        {em:'🕯️',n:'Волевой',req:'Дух воли ≥ 20',reward:'Открывает значок в коллекции',un:stats.will>=20},
-        {em:'🏃',n:'Выносливый',req:'Выносливость ≥ 20',reward:'Открывает значок в коллекции',un:stats.endurance>=20},
+      {title:'Путь привычек',items:[
+        {img:'ach_000',key:'habit_create',un:habits&&habits.length>=1,n:'Пробуждение',req:'Сделай первую привычку шагом к силе',reward:'+20 XP разово',xp:20},
+        {img:'ach_001',key:'habit_1',un:habitDays>=1,n:'Новичок E-ранга',req:'Заверши привычку 1 день подряд',reward:'+20 XP разово',xp:20},
+        {img:'ach_002',key:'habit_3',un:habitDays>=3,n:'Целитель',req:'Выполни привычку 3 дня подряд',reward:'+30 XP разово',xp:30},
+        {img:'ach_003',key:'habit_7',un:habitDays>=7,n:'Упорство',req:'Не сломался — 7 дней подряд',reward:'+50 XP разово',xp:50},
+        {img:'ach_004',key:'habit_10',un:habitDays>=10,n:'Охотник E-ранга',req:'Продержись 10 дней подряд',reward:'+60 XP разово',xp:60},
+        {img:'ach_005',key:'habit_21',un:habitDays>=21,n:'Повышение',req:'Прирост силы заметен — 21 день подряд',reward:'+100 XP разово',xp:100},
+        {img:'ach_006',key:'habit_multi',un:habits&&habits.length>=2,n:'Дисциплина',req:'Веди 2+ привычки одновременно',reward:'+40 XP разово',xp:40},
+        {img:'ach_007',key:'habit_30',un:habitDays>=30,n:'Монарх привычек',req:'30 дней подряд — ты настоящий монарх своей жизни',reward:'+150 XP разово',xp:150},
+        {img:'ach_008',key:'habit_shadow30',un:habitDays>=30,n:'Тень прогресса',req:'Не пропусти ни дня в этом месяце',reward:'+150 XP разово',xp:150},
+        {img:'ach_009',key:'lvl_2',un:lvl>=2,n:'Следующий этаж',req:'Достигни новой цели и подними уровень',reward:'+30 XP разово',xp:30},
+        {img:'ach_010',key:'habit_plan5',un:habitDays>=5,n:'Мастер плана',req:'Создай план привычек и следуй ему 5 дней',reward:'+40 XP разово',xp:40},
+        {img:'ach_011',key:'friend_1',un:myFriendsCount>=1,n:'Сильнее вместе',req:'Пригласи друга и идите к целям вместе',reward:'+40 XP разово',xp:40},
+        {img:'ach_012',key:'habit_14',un:habitDays>=14,n:'Воля монарха',req:'Преодолей сложную привычку и не сдайся — 14 дней',reward:'+80 XP разово',xp:80},
+        {img:'ach_013',key:'habit_90',un:habitDays>=90,n:'Легенда привычек',req:'90 дней подряд. Ты легенда',reward:'+300 XP разово',xp:300},
+        {img:'ach_014',key:'habit_180',un:habitDays>=180,n:'Абсолютный монарх',req:'180 дней подряд. Ты на вершине',reward:'+600 XP разово',xp:600},
       ]},
-      {title:'Без привычки',items:[
-        {em:'🚫',n:'7 без привычки',req:'7 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=7},
-        {em:'💜',n:'30 без привычки',req:'30 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=30},
-        {em:'🌟',n:'100 без привычки',req:'100 дней без срыва привычки',reward:'Открывает значок в коллекции',un:habitDays>=100},
+      {title:'Рейтинг',items:[
+        {img:'ach_091',key:'rank_1',un:pos===1,n:'Лучший из лучших',req:'Займи 1 место в рейтинге',reward:'+5000 XP разово',xp:5000},
+        {img:'ach_092',key:'rank_2',un:pos===2,n:'Серебряный охотник',req:'Займи 2 место в рейтинге',reward:'+3000 XP разово',xp:3000},
+        {img:'ach_093',key:'rank_3',un:pos===3,n:'Бронзовый воин',req:'Займи 3 место в рейтинге',reward:'+2000 XP разово',xp:2000},
+        {img:'ach_094',key:'rank_top10',un:pos!=null&&pos<=10,n:'В десятке лучших',req:'Войди в топ 10 рейтинга',reward:'+1000 XP разово',xp:1000},
+        {img:'ach_095',key:'rank_top50',un:pos!=null&&pos<=50,n:'В пятидесятке',req:'Войди в топ 50 рейтинга',reward:'+500 XP разово',xp:500},
+        {img:'ach_100',key:'rank_top100',un:pos!=null&&pos<=100,n:'В сотне сильнейших',req:'Войди в топ 100 рейтинга',reward:'+300 XP разово',xp:300},
+        {img:'ach_099',key:'rank_top500',un:pos!=null&&pos<=500,n:'В пятьсот сильнейших',req:'Войди в топ 500 рейтинга',reward:'+200 XP разово',xp:200},
+        {img:'ach_098',key:'rank_top1000',un:pos!=null&&pos<=1000,n:'В тысяче лучших',req:'Войди в топ 1000 рейтинга',reward:'+150 XP разово',xp:150},
+        {img:'ach_096',key:'rank_world_1',un:pos===1,n:'Первый в мире',req:'Займи 1 место в общем рейтинге',reward:'+10000 XP разово',xp:10000},
+        {img:'ach_097',key:'rank_city_1',un:cityPos===1,n:'Первый в регионе',req:player&&player.city?('Займи 1 место в рейтинге города '+player.city):'Укажи город в настройках, чтобы участвовать',reward:'+1500 XP разово',xp:1500},
+      ]},
+      {title:'Характеристики',items:[
+        {em:'💪',key:'stat_str',n:'Силач',req:'Сила ≥ 20',reward:'+60 XP разово',xp:60,un:stats.strength>=20},
+        {em:'⚡',key:'stat_agi',n:'Ловкач',req:'Ловкость ≥ 20',reward:'+60 XP разово',xp:60,un:stats.agility>=20},
+        {em:'🧠',key:'stat_int',n:'Интеллект',req:'Интеллект ≥ 20',reward:'+60 XP разово',xp:60,un:stats.intellect>=20},
+        {em:'❤️',key:'stat_hp',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'+60 XP разово',xp:60,un:stats.health>=20},
+        {em:'🕯️',key:'stat_will',n:'Волевой',req:'Дух воли ≥ 20',reward:'+60 XP разово',xp:60,un:stats.will>=20},
+        {em:'🏃',key:'stat_end',n:'Выносливый',req:'Выносливость ≥ 20',reward:'+60 XP разово',xp:60,un:stats.endurance>=20},
       ]},
     ];
   }
   function renderAch(elId,full){
     const el=document.getElementById(elId);if(!el)return;
     const groups=getAchGroups();
+    processNewAchievements(groups);
     if(!full){
       // компактное превью: счётчик + ровный ряд (полученные первыми); полный список — по кнопке «ВСЕ»
       let total=0,got=0,all=[];
@@ -2744,11 +2836,21 @@
     const mine=await cloudCall({action:'clan_my',uid:getUid()});
     if(mine&&mine.clan){
       const c=mine.clan;const members=mine.members||[];
+      const memberUids=new Set(members.map(m=>m.device_id||(m.player&&m.player.device_id)));
       let h='<div style="text-align:center;margin-bottom:12px"><div style="font-family:\'Exo 2\';font-size:18px;color:var(--gold)">⚔ '+escapeHtml(c.name)+'</div>'+
         '<div style="color:var(--muted);font-size:12px">'+members.length+' '+(members.length===1?'участник':'участников')+'</div></div>';
       h+=members.map(m=>{const p=m.player;const name=(p&&p.name)||'Игрок';
         return '<div class="rankrow" style="cursor:default"><div class="ava">'+(p&&p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':name[0])+'</div><div class="un">'+name+(m.role==='owner'?' <small style="color:var(--gold)">👑 лидер</small>':'')+'<small>Ранг '+((p&&p.rank)||'E')+' · LVL '+((p&&p.level)||1)+'</small></div><div class="xp">'+((p&&p.exp)||0)+'</div></div>';
       }).join('');
+      const friendsRes=await cloudCall({action:'friend_list',uid:getUid()});
+      const invitable=((friendsRes&&friendsRes.friends)||[]).filter(p=>!memberUids.has(p.device_id));
+      h+='<div style="font-family:\'Exo 2\';font-size:12px;color:var(--cyan);margin:14px 0 8px">ПРИГЛАСИТЬ ДРУГА В КЛАН</div>';
+      if(invitable.length){
+        h+=invitable.map(p=>'<div class="rankrow" style="cursor:default"><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small></div>'+
+          '<button class="poke" onclick="inviteToClan(\''+p.device_id+'\',true)">Пригласить</button></div>').join('');
+      } else {
+        h+='<div style="text-align:center;color:var(--muted);font-size:13px;padding:10px 16px;line-height:1.6">Среди друзей нет свободных — добавь друзей во вкладке ДРУЗЬЯ или пригласи любого игрока из его профиля в рейтинге.</div>';
+      }
       h+='<div class="addf" style="margin-top:10px;border-color:var(--danger);color:#ffb3c2" onclick="leaveClan()">'+(mine.myRole==='owner'?'✕ Распустить / выйти из клана':'✕ Покинуть клан')+'</div>';
       box.innerHTML=h;
       return;
@@ -2792,9 +2894,9 @@
     const res=await cloudCall({action:'clan_leave',uid:getUid()});
     if(res&&res.ok){toast('Клан покинут');loadClanTab();}
   }
-  async function inviteToClan(targetUid){
+  async function inviteToClan(targetUid,fromClanTab){
     const res=await cloudCall({action:'clan_invite',uid:getUid(),target_uid:targetUid});
-    if(res&&res.ok){toast('✓ Приглашение в клан отправлено');openPlayerProfile(targetUid);}
+    if(res&&res.ok){toast('✓ Приглашение в клан отправлено');if(fromClanTab)loadClanTab();else openPlayerProfile(targetUid);}
     else toast(res&&res.error==='target already in clan'?'Игрок уже в клане':res&&res.error==='not in clan'?'Ты не в клане':'Не удалось отправить приглашение');
   }
   async function respondClanInvite(clanId,accept){
@@ -2857,12 +2959,14 @@
     document.getElementById('lbscreen').classList.add('show');
     const box=document.getElementById('lb-full');
     box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Загрузка…</div>';
-    const res=await cloudCall({action:'leaderboard',stat:lbCurStat});
+    const cityParam=lbScope==='city'?(player&&player.city):undefined;
+    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam});
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;
     const myFullPos=top.findIndex(p=>p.name===myName);
-    if(!lbCurStat){myRankPos=myFullPos>=0?myFullPos+1:null;renderAch('progAch');renderAch('profAch');}
+    if(!lbCurStat&&lbScope==='world'){myRankPos=myFullPos>=0?myFullPos+1:null;renderAch('progAch');renderAch('profAch');}
+    if(!lbCurStat&&lbScope==='city'){myCityRankPos=myFullPos>=0?myFullPos+1:null;renderAch('progAch');renderAch('profAch');}
     box.innerHTML=top.map((p,i)=>{
       const me=(p.name===myName)?' me':'';
       const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
