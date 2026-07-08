@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-66';
+  var APP_VERSION='2026-07-08-67';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -773,6 +773,7 @@
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
+    <div class="priv-row"><span class="pl">🔄 Сбросить накопленный объём упражнений<br><small style="color:var(--muted)">если ачивки за упражнения открылись сами по себе</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
     <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Удалить аккаунт</span><button class="poke" id="resetBtn" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfileTap(this)">Удалить</button></div>
     <div class="rnote" style="margin-top:8px">Удалит игрока и весь прогресс — локально и в облаке — и откроет создание нового игрока. Нажать дважды для подтверждения.</div>
     <div class="pclose" style="text-align:center" onclick="document.getElementById('setmodal').classList.remove('show')">закрыть</div>
@@ -1448,6 +1449,19 @@
     exerciseTotals[name]=Math.max(0,(exerciseTotals[name]||0)+delta);
     DB.set('exerciseTotals',exerciseTotals);
   }
+  // на случай если объём накопился неверно (баг/двойной тап) и ачивки открылись сами —
+  // обнуляем только объём упражнений, профиль/уровень/друзей не трогаем
+  function resetExerciseTotals(){
+    exerciseTotals={};
+    DB.set('exerciseTotals',exerciseTotals);
+    // иначе уже "полученные" (пусть и ошибочно) ачивки за объём никогда не откроются заново —
+    // ach_027 (весь квест на 100% сегодня) не трогаем, он не завязан на объём
+    Object.keys(EXERCISE_ACH_MAP).forEach(k=>{if(k!=='ach_027')earnedAch.delete(k);});
+    saveEarnedAch();
+    document.getElementById('setmodal').classList.remove('show');
+    renderAch('progAch');renderAch('profAch');
+    toast('✓ Объём упражнений обнулён — ачивки за них пересчитаются заново');
+  }
   // ===== АЧИВКИ: EXP ЗА РАЗБЛОКИРОВКУ (разово, каждая ачивка — свой ключ) =====
   // Важно: бонус от ачивки НИКОГДА не пересекает границу уровня сам по себе —
   // заполняет шкалу максимум до need-1, левел-ап всё равно только от квестов.
@@ -1569,7 +1583,7 @@
   }
   async function resetProfile(){
     try{await cloudCall({action:'delete',uid:getUid()});}catch(e){}
-    ['player','progress','qlog','qsel','qcustom','qtargets','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit','habits','bodyPhoto'].forEach(k=>localStorage.removeItem('sl_'+k));
+    ['player','progress','qlog','qsel','qcustom','qtargets','water','meals','eaten','macros','stats','weightLog','bodyMetrics','hasMetrics','habit','habits','bodyPhoto','exerciseTotals','earnedAch','achFixV1'].forEach(k=>localStorage.removeItem('sl_'+k));
     Object.keys(localStorage).filter(k=>k.startsWith('sl_qr_')).forEach(k=>localStorage.removeItem(k));
     location.reload();
   }
