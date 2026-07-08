@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-65';
+  var APP_VERSION='2026-07-08-66';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -1472,6 +1472,22 @@
     }
   }
   let myFriendsCount=0;
+  // Разовая миграция при первом запуске обновлённой экономики ачивок: у игроков,
+  // которые уже давно играют, множество ачивок оказывались сразу "выполнены"
+  // (стрик, объём упражнений, привычки), и все разом выдавали XP одним куском —
+  // выглядело как "экспа взялась ниоткуда". Чиним один раз: помечаем уже
+  // выполненные ачивки как учтённые БЕЗ выдачи XP и обнуляем прогресс уровня
+  // до честного старта — дальше XP идёт только за новые события.
+  function migrateAchBackfillOnce(){
+    if(DB.get('achFixV1',false))return;
+    DB.set('achFixV1',true);
+    if(!player)return;
+    const groups=getAchGroups();
+    groups.forEach(g=>g.items.forEach(a=>{if(a.un&&a.key)earnedAch.add(a.key);}));
+    saveEarnedAch();
+    exp=0;lvl=1;need=needForLevel(1);
+    saveProgress();
+  }
   function go(name){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('s-'+name).classList.add('active');
@@ -2026,6 +2042,8 @@
     loadMeasurements();
     loadExerciseTotals();
     loadEarnedAch();
+    initHabit(); // нужен до бэкфила ачивок ниже, чтобы учесть уже существующие привычки
+    migrateAchBackfillOnce();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
