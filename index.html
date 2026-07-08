@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-07-61';
+  var APP_VERSION='2026-07-08-65';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -766,7 +766,7 @@
     <div class="pn" style="text-align:center">⚙ Настройки</div>
     <div class="pr" style="text-align:center;margin-bottom:14px">Игрок и приложение</div>
     <div class="priv-row"><span class="pl">✏️ Имя игрока</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');renamePlayer()">Изменить</button></div>
-    <div class="priv-row"><span class="pl">📍 Город</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');editCity()">Изменить</button></div>
+    <div class="priv-row"><span class="pl">📍 Город<br><small id="cityCurVal" style="color:var(--muted)">не указан</small></span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');editCity()">Изменить</button></div>
     <div class="priv-row"><span class="pl">🎴 Аватар (аниме)</span><button class="poke" onclick="document.getElementById('avatar-reupload').click()">Загрузить</button></div>
     <input type="file" accept="image/*" id="avatar-reupload" style="display:none" onchange="onAvatarReupload(event)">
     <div class="priv-row"><span class="pl">🔗 Вход на компьютере</span><button class="poke" onclick="openLinkModal()">Открыть</button></div>
@@ -1518,7 +1518,11 @@
     document.getElementById('privmodal').classList.remove('show');
     toast('✓ Настройки приватности сохранены');
   }
-  function openSettings(){document.getElementById('setmodal').classList.add('show');}
+  function openSettings(){renderCitySetting();document.getElementById('setmodal').classList.add('show');}
+  function renderCitySetting(){
+    const el=document.getElementById('cityCurVal');if(!el)return;
+    el.textContent=(player&&player.city)?player.city:'не указан';
+  }
   function openLinkModal(){
     document.getElementById('setmodal').classList.remove('show');
     document.getElementById('link-mycode').value=getUid();
@@ -1769,6 +1773,7 @@
     player.city=city.trim();
     DB.set('player',player);
     cloudPush();
+    renderCitySetting();
     toast('✓ Город обновлён: '+player.city);
   }
   function onAvatarReupload(ev){
