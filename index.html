@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-67';
+  var APP_VERSION='2026-07-08-68';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -773,7 +773,7 @@
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
-    <div class="priv-row"><span class="pl">🔄 Сбросить накопленный объём упражнений<br><small style="color:var(--muted)">если ачивки за упражнения открылись сами по себе</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
+    <div class="priv-row"><span class="pl">🔄 Сбросить объём упражнений и характеристики<br><small style="color:var(--muted)">если ачивки/статы открылись сами по себе</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
     <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Удалить аккаунт</span><button class="poke" id="resetBtn" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfileTap(this)">Удалить</button></div>
     <div class="rnote" style="margin-top:8px">Удалит игрока и весь прогресс — локально и в облаке — и откроет создание нового игрока. Нажать дважды для подтверждения.</div>
     <div class="pclose" style="text-align:center" onclick="document.getElementById('setmodal').classList.remove('show')">закрыть</div>
@@ -1458,9 +1458,14 @@
     // ach_027 (весь квест на 100% сегодня) не трогаем, он не завязан на объём
     Object.keys(EXERCISE_ACH_MAP).forEach(k=>{if(k!=='ach_027')earnedAch.delete(k);});
     saveEarnedAch();
+    // характеристики растут из тех же квестов — обнуляем вместе с объёмом, иначе
+    // раздутые "Сила"/"Ловкость" и т.п. останутся, а следующий заход перезапишет
+    // ими же честно обнулённую базу
+    stats={strength:0,agility:0,health:0,intellect:0,will:0,endurance:0};
+    saveStats();renderStats();
     document.getElementById('setmodal').classList.remove('show');
     renderAch('progAch');renderAch('profAch');
-    toast('✓ Объём упражнений обнулён — ачивки за них пересчитаются заново');
+    toast('✓ Объём упражнений и характеристики обнулены');
   }
   // ===== АЧИВКИ: EXP ЗА РАЗБЛОКИРОВКУ (разово, каждая ачивка — свой ключ) =====
   // Важно: бонус от ачивки НИКОГДА не пересекает границу уровня сам по себе —
