@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-68';
+  var APP_VERSION='2026-07-08-69';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -242,7 +242,7 @@
   .badge small{font-size:9px;color:var(--muted);letter-spacing:.5px}
   .badge.lock{opacity:.35;filter:grayscale(1)}
   .badge.imgbadge{padding:0}
-  .badge.imgbadge img{width:100%;height:100%;object-fit:contain}
+  .badge.imgbadge img{width:100%;height:100%;object-fit:cover;transform:scale(1.15)}
   .ach-group-title{display:flex;align-items:center;gap:10px;font-family:"Exo 2";font-size:12px;letter-spacing:2px;color:var(--cyan-soft);margin:20px 0 10px;text-transform:uppercase}
   .ach-group-title:first-child{margin-top:0}
   .ach-group-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(70,215,255,.35),transparent)}
@@ -271,7 +271,7 @@
   .badge3d-front{font-size:34px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 35%,rgba(43,107,255,.18),rgba(0,0,0,.35))}
   .badge3d-front.un{border:1px solid rgba(255,214,107,.55);background:radial-gradient(circle at 50% 32%,rgba(255,214,107,.28),rgba(43,16,60,.5));box-shadow:0 0 18px rgba(255,214,107,.35),inset 0 0 16px rgba(255,214,107,.14)}
   .badge3d-front.lock{filter:grayscale(1) brightness(.55);opacity:.7}
-  .badge3d-front img{width:100%;height:100%;object-fit:contain}
+  .badge3d-front img{width:100%;height:100%;object-fit:cover;transform:scale(1.15)}
   .badge3d-front .b3-lockico{position:absolute;right:5px;bottom:4px;font-size:12px;opacity:.85}
   .badge3d-front .b3-check{position:absolute;right:4px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}
   .badge3d-back{transform:rotateY(180deg);padding:14px 10px;text-align:center;flex-direction:column;gap:7px;border:1px solid rgba(70,215,255,.3);background:linear-gradient(160deg,rgba(43,107,255,.22),rgba(10,10,20,.6))}
@@ -2670,18 +2670,24 @@
         {img:'ach_013',key:'habit_90',un:habitDays>=90,n:'Легенда привычек',req:'90 дней подряд. Ты легенда',reward:'+300 XP разово',xp:300},
         {img:'ach_014',key:'habit_180',un:habitDays>=180,n:'Абсолютный монарх',req:'180 дней подряд. Ты на вершине',reward:'+600 XP разово',xp:600},
       ]},
-      {title:'Рейтинг',items:[
-        {img:'ach_091',key:'rank_1',un:pos===1,n:'Лучший из лучших',req:'Займи 1 место в рейтинге',reward:'+5000 XP разово',xp:5000},
-        {img:'ach_092',key:'rank_2',un:pos===2,n:'Серебряный охотник',req:'Займи 2 место в рейтинге',reward:'+3000 XP разово',xp:3000},
-        {img:'ach_093',key:'rank_3',un:pos===3,n:'Бронзовый воин',req:'Займи 3 место в рейтинге',reward:'+2000 XP разово',xp:2000},
-        {img:'ach_094',key:'rank_top10',un:pos!=null&&pos<=10,n:'В десятке лучших',req:'Войди в топ 10 рейтинга',reward:'+1000 XP разово',xp:1000},
-        {img:'ach_095',key:'rank_top50',un:pos!=null&&pos<=50,n:'В пятидесятке',req:'Войди в топ 50 рейтинга',reward:'+500 XP разово',xp:500},
-        {img:'ach_100',key:'rank_top100',un:pos!=null&&pos<=100,n:'В сотне сильнейших',req:'Войди в топ 100 рейтинга',reward:'+300 XP разово',xp:300},
-        {img:'ach_099',key:'rank_top500',un:pos!=null&&pos<=500,n:'В пятьсот сильнейших',req:'Войди в топ 500 рейтинга',reward:'+200 XP разово',xp:200},
-        {img:'ach_098',key:'rank_top1000',un:pos!=null&&pos<=1000,n:'В тысяче лучших',req:'Войди в топ 1000 рейтинга',reward:'+150 XP разово',xp:150},
-        {img:'ach_096',key:'rank_world_1',un:pos===1,n:'Первый в мире',req:'Займи 1 место в общем рейтинге',reward:'+10000 XP разово',xp:10000},
-        {img:'ach_097',key:'rank_city_1',un:cityPos===1,n:'Первый в регионе',req:player&&player.city?('Займи 1 место в рейтинге города '+player.city):'Укажи город в настройках, чтобы участвовать',reward:'+1500 XP разово',xp:1500},
-      ]},
+      {title:'Рейтинг',items:(()=>{
+        // временно выключено: пока игроков мало, топ-места достаются даром —
+        // включим обратно, когда наберётся достаточно активных игроков
+        const RANK_ACH_ENABLED=new Date()>=new Date('2026-08-08');
+        const gate=RANK_ACH_ENABLED?null:'Скоро — рейтинг откроется, когда наберётся больше игроков';
+        return[
+        {img:'ach_091',key:'rank_1',un:RANK_ACH_ENABLED&&pos===1,n:'Лучший из лучших',req:gate||'Займи 1 место в рейтинге',reward:'+5000 XP разово',xp:5000},
+        {img:'ach_092',key:'rank_2',un:RANK_ACH_ENABLED&&pos===2,n:'Серебряный охотник',req:gate||'Займи 2 место в рейтинге',reward:'+3000 XP разово',xp:3000},
+        {img:'ach_093',key:'rank_3',un:RANK_ACH_ENABLED&&pos===3,n:'Бронзовый воин',req:gate||'Займи 3 место в рейтинге',reward:'+2000 XP разово',xp:2000},
+        {img:'ach_094',key:'rank_top10',un:RANK_ACH_ENABLED&&pos!=null&&pos<=10,n:'В десятке лучших',req:gate||'Войди в топ 10 рейтинга',reward:'+1000 XP разово',xp:1000},
+        {img:'ach_095',key:'rank_top50',un:RANK_ACH_ENABLED&&pos!=null&&pos<=50,n:'В пятидесятке',req:gate||'Войди в топ 50 рейтинга',reward:'+500 XP разово',xp:500},
+        {img:'ach_100',key:'rank_top100',un:RANK_ACH_ENABLED&&pos!=null&&pos<=100,n:'В сотне сильнейших',req:gate||'Войди в топ 100 рейтинга',reward:'+300 XP разово',xp:300},
+        {img:'ach_099',key:'rank_top500',un:RANK_ACH_ENABLED&&pos!=null&&pos<=500,n:'В пятьсот сильнейших',req:gate||'Войди в топ 500 рейтинга',reward:'+200 XP разово',xp:200},
+        {img:'ach_098',key:'rank_top1000',un:RANK_ACH_ENABLED&&pos!=null&&pos<=1000,n:'В тысяче лучших',req:gate||'Войди в топ 1000 рейтинга',reward:'+150 XP разово',xp:150},
+        {img:'ach_096',key:'rank_world_1',un:RANK_ACH_ENABLED&&pos===1,n:'Первый в мире',req:gate||'Займи 1 место в общем рейтинге',reward:'+10000 XP разово',xp:10000},
+        {img:'ach_097',key:'rank_city_1',un:RANK_ACH_ENABLED&&cityPos===1,n:'Первый в регионе',req:gate||(player&&player.city?('Займи 1 место в рейтинге города '+player.city):'Укажи город в настройках, чтобы участвовать'),reward:'+1500 XP разово',xp:1500},
+        ];})(),
+      },
       {title:'Характеристики',items:[
         {em:'💪',key:'stat_str',n:'Силач',req:'Сила ≥ 20',reward:'+60 XP разово',xp:60,un:stats.strength>=20},
         {em:'⚡',key:'stat_agi',n:'Ловкач',req:'Ловкость ≥ 20',reward:'+60 XP разово',xp:60,un:stats.agility>=20},
