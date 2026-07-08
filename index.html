@@ -686,6 +686,11 @@
           <button class="on" onclick="setLbScope(this,'world')">🌍 Мир</button>
           <button onclick="setLbScope(this,'city')">📍 Мой город</button>
         </div>
+        <div class="lb-stat-tabs" id="lbSexTabs">
+          <button class="on" onclick="setLbSex(this,null)">👥 Все</button>
+          <button onclick="setLbSex(this,'Мужской')">♂ Мужчины</button>
+          <button onclick="setLbSex(this,'Женский')">♀ Женщины</button>
+        </div>
         <div class="lb-stat-tabs" id="lbStatTabs">
           <button class="on" onclick="setLbStat(this,null)">⚖ Общий</button>
           <button onclick="setLbStat(this,'strength')">💪 Сила</button>
@@ -1163,6 +1168,7 @@
   const LB_STAT_LABELS={strength:'Топ по Силе',agility:'Топ по Ловкости',health:'Топ по Здоровью',intellect:'Топ по Интеллекту',will:'Топ по Духу воли',endurance:'Топ по Выносливости'};
   let lbCurStat=null;
   let lbScope='world'; // 'world' | 'city'
+  let lbCurSex=null; // null | 'Мужской' | 'Женский'
   function setLbStat(btn,stat){
     btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
@@ -1178,16 +1184,24 @@
     updateLbLabel();
     loadLeaderboard();
   }
+  function setLbSex(btn,sex){
+    btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    lbCurSex=sex;
+    updateLbLabel();
+    loadLeaderboard();
+  }
   function updateLbLabel(){
     const lbl=document.getElementById('lb-stat-label');if(!lbl)return;
     const base=lbCurStat?LB_STAT_LABELS[lbCurStat]:'Топ разносторонних';
     const scopeLbl=lbScope==='city'?('город '+(player&&player.city||'')):'все игроки';
-    lbl.textContent=base+' · '+scopeLbl;
+    const sexLbl=lbCurSex?(' · '+(lbCurSex==='Мужской'?'мужчины':'женщины')):'';
+    lbl.textContent=base+' · '+scopeLbl+sexLbl;
   }
   async function loadLeaderboard(){
     const box=document.getElementById('lb-list');if(!box)return;
     const cityParam=lbScope==='city'?(player&&player.city):undefined;
-    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam});
+    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam,sex:lbCurSex});
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
@@ -2960,7 +2974,7 @@
     const box=document.getElementById('lb-full');
     box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Загрузка…</div>';
     const cityParam=lbScope==='city'?(player&&player.city):undefined;
-    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam});
+    const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam,sex:lbCurSex});
     const top=(res&&res.top)||[];
     if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Пока никого нет — стань первым! 💪</div>';return;}
     const myName=player&&player.name;
