@@ -13,7 +13,7 @@
   // (просто скрывает/показывает его через кнопку меню, не перезагружая страницу) —
   // поэтому одной проверки версии при загрузке недостаточно: перепроверяем при
   // каждом возврате видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-07-09-75';
+  var APP_VERSION='2026-07-09-76';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -535,7 +535,7 @@
     <div class="window surprise hide" id="surpriseCard">
       <div class="surprise-head">⚡ ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ <span class="surprise-timer" id="surpriseTimer">60:00</span></div>
       <div class="surprise-name" id="surpriseName">—</div>
-      <div class="surprise-sub">Успей выполнить, пока не истёк срок — за это даётся бонусный XP</div>
+      <div class="surprise-sub">Успей выполнить, пока не истёк срок — за это даётся бонусный EXP</div>
       <button class="enter" style="margin-top:10px" onclick="completeSurpriseQuest()">✓ Выполнил!</button>
     </div>
     <div class="window qinfo">
@@ -801,7 +801,7 @@
     <div class="ach-x" onclick="document.getElementById('qbmodal').classList.remove('show')">✕</div>
     <div class="pn" style="text-align:center">⚙ Настрой свой квест</div>
     <div class="pr" style="text-align:center;margin-bottom:6px">Выбери минимум 1 упражнение из каждой категории. Можно добавить свои.</div>
-    <div class="pr" style="text-align:center;margin-bottom:10px;color:var(--gold);font-size:12px;line-height:1.5">⚠ Ставь «старт:» честно — сколько реально можешь делать каждый день. Кто ставит больше, тот и получает больше XP за то же упражнение. Планка растёт вместе с уровнем — врать себе не выгодно.</div>
+    <div class="pr" style="text-align:center;margin-bottom:10px;color:var(--gold);font-size:12px;line-height:1.5">⚠ Ставь «старт:» честно — сколько реально можешь делать каждый день. Кто ставит больше, тот и получает больше EXP за то же упражнение. Планка растёт вместе с уровнем — врать себе не выгодно.</div>
     <div id="qb-body"></div>
     <div style="margin-top:10px">
       <div style="font-family:'Exo 2';font-size:12px;color:var(--cyan);margin-bottom:6px">＋ Своё упражнение</div>
@@ -1148,7 +1148,7 @@
     loadWeightLog();drawChart();loadMeasurements();
     renderStats();render();renderStreak();renderDays();renderQuest();renderBodyMetrics();renderNutrition();
   }
-  // штраф за неактивность (scripts/check_inactivity.py) — не списание XP, а временный дебафф
+  // штраф за неактивность (scripts/check_inactivity.py) — не списание EXP, а временный дебафф
   // характеристик (pending_penalty = сколько сейчас снято с каждого стата), снимается ботом
   // автоматически, как только игрок закрывает день заново
   function applyPendingPenalty(row){
@@ -1301,8 +1301,8 @@
       }
     }
   }
-  // бонус за серию без пропусков — применяется к ЛЮБОМУ заработанному XP за день
-  // ===== ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ — раз-два в неделю, час на выполнение, бонусный XP =====
+  // бонус за серию без пропусков — применяется к ЛЮБОМУ заработанному EXP за день
+  // ===== ВНЕЗАПНОЕ ЗАДАНИЕ СИСТЕМЫ — раз-два в неделю, час на выполнение, бонусный EXP =====
   const SURPRISE_POOL=[
     ['20 приседаний за раз',40,'strength'],['15 отжиманий за раз',40,'strength'],
     ['1 минута планки',35,'strength'],['50 прыжков на скакалке',35,'agility'],
@@ -1313,7 +1313,7 @@
   const SURPRISE_WINDOW_MS=60*60*1000; // час на выполнение
   const SURPRISE_CHANCE=0.28; // ~2 раза в неделю в среднем
   // ===== БОНУС НА ДЕНЬ РОЖДЕНИЯ — проверяется каждый день, а не только при регистрации =====
-  const BIRTHDAY_BONUS_XP=500;
+  const BIRTHDAY_BONUS_EXP=500;
   function checkBirthday(){
     if(!player||!player.dob)return;
     const d=new Date(player.dob+'T00:00:00'),t=new Date();
@@ -1321,9 +1321,9 @@
     const yr=t.getFullYear();
     if(player.lastBirthdayBonusYear===yr)return; // уже выдан в этом году
     player.lastBirthdayBonusYear=yr;DB.set('player',player);
-    exp=Math.min(need-1,exp+BIRTHDAY_BONUS_XP); // день рождения не перекидывает на уровень
+    exp=Math.min(need-1,exp+BIRTHDAY_BONUS_EXP); // день рождения не перекидывает на уровень
     saveProgress();render();
-    setTimeout(()=>toast('🎂 С днём рождения! +'+BIRTHDAY_BONUS_XP+' XP буст'),900);
+    setTimeout(()=>toast('🎂 С днём рождения! +'+BIRTHDAY_BONUS_EXP+' EXP буст'),900);
   }
   function maybeSpawnSurpriseQuest(){
     if(!player)return;
@@ -1345,7 +1345,7 @@
     const card=document.getElementById('surpriseCard');if(!card)return;
     const q=player&&player.surpriseQuest;
     if(!q||q.status!=='active'){card.classList.add('hide');if(surpriseTickId){clearInterval(surpriseTickId);surpriseTickId=null;}return;}
-    document.getElementById('surpriseName').textContent=q.name+' (+'+q.xp+' XP)';
+    document.getElementById('surpriseName').textContent=q.name+' (+'+q.xp+' EXP)';
     card.classList.remove('hide');
     if(surpriseTickId)clearInterval(surpriseTickId);
     const tick=()=>{
@@ -1371,7 +1371,7 @@
     saveStats();renderStats();saveProgress();render();
     if(surpriseTickId){clearInterval(surpriseTickId);surpriseTickId=null;}
     document.getElementById('surpriseCard').classList.add('hide');
-    toast('✓ Внезапное задание выполнено! +'+awarded+' XP');
+    toast('✓ Внезапное задание выполнено! +'+awarded+' EXP');
   }
   function streakXpMultiplier(s){
     if(s>=365)return 1.30;
@@ -1400,7 +1400,7 @@
       const awarded=+el.dataset.awarded||xp;
       el.classList.remove('done');exp-=awarded;
       if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(.+)\]/,(m,a,b)=>'[0/'+b+']');
-      toast('−'+awarded+' XP');
+      toast('−'+awarded+' EXP');
       if(isExtra)setExtraAwarded(nm0,null);
     }else{
       // допы (футбол, доп.активность) дают полную ставку только если основной квест выполнен на 100% — иначе половину
@@ -1411,7 +1411,7 @@
       el.classList.add('done');exp+=awarded;
       if(c)c.textContent=c.textContent.replace(/\[(\d+)\/(\d+)(.*)\]/,(m,a,b,r)=>'['+b+'/'+b+r+']');
       if(exp>=need){while(exp>=need){exp-=need;lvl++;need=needForLevel(lvl);levelUpFx(lvl);}toast('⬆ LEVEL UP! Уровень '+lvl);}
-      else toast('+'+awarded+' XP'+(mult>1?' (×'+mult.toFixed(2)+')':''));
+      else toast('+'+awarded+' EXP'+(mult>1?' (×'+mult.toFixed(2)+')':''));
       if(isExtra)setExtraAwarded(nm0,awarded);
     }
     const nm=el.querySelector('.qrn').textContent, sp=el.dataset.sphere||'health', q=qlogGet();
@@ -1468,7 +1468,7 @@
     if(bonus>0){
       saveExtras(list);
       exp=Math.min(need-1,exp+bonus); // бонус за допы не перекидывает на уровень
-      saveProgress();render();toast('🎯 Квест выполнен полностью! +'+bonus+' XP бонус за допы');
+      saveProgress();render();toast('🎯 Квест выполнен полностью! +'+bonus+' EXP бонус за допы');
     }
   }
   // ===== СУММАРНЫЕ ПОВТОРЕНИЯ УПРАЖНЕНИЙ (для ачивок за упражнения) =====
@@ -1525,16 +1525,16 @@
       saveEarnedAch();
       fresh.forEach(a=>{if(a.xp)awardAchXp(a.xp);});
       render();
-      fresh.forEach(a=>toast('🏆 '+a.n+(a.xp?' +'+a.xp+' XP':'')));
+      fresh.forEach(a=>toast('🏆 '+a.n+(a.xp?' +'+a.xp+' EXP':'')));
     }
   }
   let myFriendsCount=0;
   // Разовая миграция при первом запуске обновлённой экономики ачивок: у игроков,
   // которые уже давно играют, множество ачивок оказывались сразу "выполнены"
-  // (стрик, объём упражнений, привычки), и все разом выдавали XP одним куском —
+  // (стрик, объём упражнений, привычки), и все разом выдавали EXP одним куском —
   // выглядело как "экспа взялась ниоткуда". Чиним один раз: помечаем уже
-  // выполненные ачивки как учтённые БЕЗ выдачи XP и обнуляем прогресс уровня
-  // до честного старта — дальше XP идёт только за новые события.
+  // выполненные ачивки как учтённые БЕЗ выдачи EXP и обнуляем прогресс уровня
+  // до честного старта — дальше EXP идёт только за новые события.
   function migrateAchBackfillOnce(){
     if(DB.get('achFixV1',false))return;
     DB.set('achFixV1',true);
@@ -2553,7 +2553,7 @@
     toast('⚡ Добавлено в квест на сегодня: '+n.trim());
   }
   // активные игры — разовая активность дня, привязана к той характеристике, которую тренирует
-  // базовый темп XP за 30 минут игры; итог зависит от времени, которое ты реально играл
+  // базовый темп EXP за 30 минут игры; итог зависит от времени, которое ты реально играл
   // активные игры равноценны — разницу делает длительность, а не вид спорта
   const ACTIVE_GAMES=[
     ['⚽ Футбол','endurance',40],['🏐 Волейбол','endurance',40],['🏀 Баскетбол','endurance',40],
@@ -2585,7 +2585,7 @@
     saveExtras(list);
     renderExtras();
     document.getElementById('gamesmodal').classList.remove('show');
-    toast('🏐 Добавлено в квест на сегодня: '+label+' (+'+xp+' XP)');
+    toast('🏐 Добавлено в квест на сегодня: '+label+' (+'+xp+' EXP)');
   }
   function renderExtras(){
     const box=document.getElementById('extraGoals');if(!box)return;
@@ -2633,7 +2633,7 @@
   // честно остаются заблокированными, без выдуманных условий.
   // unit: ед.измерения для отображения; cardName/cardReq/cardExp — точно с картинки.
   const EXERCISE_ACH_MAP={
-    // === БАЗОВЫЕ (зелёный стиль, 015-027) — [упражнение,цель,ед.,название,XP] ===
+    // === БАЗОВЫЕ (зелёный стиль, 015-027) — [упражнение,цель,ед.,название,EXP] ===
     'ach_015':['Приседания',30,'раз','ТЕНЬ ПРИСЕДАЕТ',20],
     'ach_016':['Приседания',100,'раз','ПОВЕЛИТЕЛЬ ПРИСЕДАНИЙ',50],
     'ach_017':['Бег',3,'км','СКОРОСТЬ ТЕНИ',20],
@@ -2693,7 +2693,7 @@
       let un=false,req;
       if(ex==='__alldone__'){un=isMainQuestDoneToday();req='Выполни весь квест на 100% один день';}
       else{un=(exerciseTotals[ex]||0)>=need;req='Суммарно '+need+' '+unit+' ('+ex+')';}
-      return{img:imgKey,key:imgKey,un,n:cardName,req,reward:'+'+xp+' XP разово',xp};
+      return{img:imgKey,key:imgKey,un,n:cardName,req,reward:'+'+xp+' EXP разово',xp};
     });
   }
   function getAchGroups(){
@@ -2702,38 +2702,38 @@
     const cityPos=myCityRankPos;
     return [
       {title:'Серия дней',items:[
-        {img:'ach_077',key:'streak_1',un:streak>=1,n:'Первый шаг',req:'Серия 1 день подряд',reward:'+50 XP разово',xp:50},
-        {img:'ach_078',key:'streak_3',un:streak>=3,n:'Вход в привычку',req:'Серия 3 дня подряд',reward:'+100 XP разово',xp:100},
-        {img:'ach_079',key:'streak_7',un:streak>=7,n:'Неделя силы',req:'Серия 7 дней подряд',reward:'+200 XP разово, +5% к XP за день (пассивно)',xp:200},
-        {img:'ach_080',key:'streak_14',un:streak>=14,n:'Две недели стали',req:'Серия 14 дней подряд',reward:'+300 XP разово, +10% к XP за день (пассивно)',xp:300},
-        {img:'ach_081',key:'streak_21',un:streak>=21,n:'Три недели пути',req:'Серия 21 день подряд',reward:'+500 XP разово',xp:500},
-        {img:'ach_082',key:'streak_30',un:streak>=30,n:'Месяц дисциплины',req:'Серия 30 дней подряд',reward:'+750 XP разово, +15% к XP за день (пассивно)',xp:750},
-        {img:'ach_083',key:'streak_45',un:streak>=45,n:'Несокрушимый',req:'Серия 45 дней подряд',reward:'+1000 XP разово',xp:1000},
-        {img:'ach_084',key:'streak_60',un:streak>=60,n:'Проверен силой',req:'Серия 60 дней подряд',reward:'+1500 XP разово',xp:1500},
-        {img:'ach_085',key:'streak_90',un:streak>=90,n:'Легенда начинается',req:'Серия 90 дней подряд',reward:'+2000 XP разово, +20% к XP за день (пассивно)',xp:2000},
-        {img:'ach_086',key:'streak_120',un:streak>=120,n:'Хранитель дисциплины',req:'Серия 120 дней подряд',reward:'+3000 XP разово',xp:3000},
-        {img:'ach_087',key:'streak_150',un:streak>=150,n:'Истинный охотник',req:'Серия 150 дней подряд',reward:'+5000 XP разово',xp:5000},
-        {img:'ach_088',key:'streak_180',un:streak>=180,n:'Владыка привычек',req:'Серия 180 дней подряд',reward:'+7500 XP разово, +25% к XP за день (пассивно)',xp:7500},
-        {img:'ach_089',key:'streak_210',un:streak>=210,n:'Беспрецедентный',req:'Серия 210 дней подряд',reward:'+10000 XP разово',xp:10000},
-        {img:'ach_090',key:'streak_365',un:streak>=365,n:'Легенда года',req:'Серия 365 дней подряд',reward:'+20000 XP разово, +30% к XP за день (максимум, пассивно)',xp:20000},
+        {img:'ach_077',key:'streak_1',un:streak>=1,n:'Первый шаг',req:'Серия 1 день подряд',reward:'+50 EXP разово',xp:50},
+        {img:'ach_078',key:'streak_3',un:streak>=3,n:'Вход в привычку',req:'Серия 3 дня подряд',reward:'+100 EXP разово',xp:100},
+        {img:'ach_079',key:'streak_7',un:streak>=7,n:'Неделя силы',req:'Серия 7 дней подряд',reward:'+200 EXP разово, +5% к EXP за день (пассивно)',xp:200},
+        {img:'ach_080',key:'streak_14',un:streak>=14,n:'Две недели стали',req:'Серия 14 дней подряд',reward:'+300 EXP разово, +10% к EXP за день (пассивно)',xp:300},
+        {img:'ach_081',key:'streak_21',un:streak>=21,n:'Три недели пути',req:'Серия 21 день подряд',reward:'+500 EXP разово',xp:500},
+        {img:'ach_082',key:'streak_30',un:streak>=30,n:'Месяц дисциплины',req:'Серия 30 дней подряд',reward:'+750 EXP разово, +15% к EXP за день (пассивно)',xp:750},
+        {img:'ach_083',key:'streak_45',un:streak>=45,n:'Несокрушимый',req:'Серия 45 дней подряд',reward:'+1000 EXP разово',xp:1000},
+        {img:'ach_084',key:'streak_60',un:streak>=60,n:'Проверен силой',req:'Серия 60 дней подряд',reward:'+1500 EXP разово',xp:1500},
+        {img:'ach_085',key:'streak_90',un:streak>=90,n:'Легенда начинается',req:'Серия 90 дней подряд',reward:'+2000 EXP разово, +20% к EXP за день (пассивно)',xp:2000},
+        {img:'ach_086',key:'streak_120',un:streak>=120,n:'Хранитель дисциплины',req:'Серия 120 дней подряд',reward:'+3000 EXP разово',xp:3000},
+        {img:'ach_087',key:'streak_150',un:streak>=150,n:'Истинный охотник',req:'Серия 150 дней подряд',reward:'+5000 EXP разово',xp:5000},
+        {img:'ach_088',key:'streak_180',un:streak>=180,n:'Владыка привычек',req:'Серия 180 дней подряд',reward:'+7500 EXP разово, +25% к EXP за день (пассивно)',xp:7500},
+        {img:'ach_089',key:'streak_210',un:streak>=210,n:'Беспрецедентный',req:'Серия 210 дней подряд',reward:'+10000 EXP разово',xp:10000},
+        {img:'ach_090',key:'streak_365',un:streak>=365,n:'Легенда года',req:'Серия 365 дней подряд',reward:'+20000 EXP разово, +30% к EXP за день (максимум, пассивно)',xp:20000},
       ]},
       {title:'Упражнения',items:getExerciseAchItems()},
       {title:'Путь привычек',items:[
-        {img:'ach_000',key:'habit_create',un:habits&&habits.length>=1,n:'Пробуждение',req:'Сделай первую привычку шагом к силе',reward:'+20 XP разово',xp:20},
-        {img:'ach_001',key:'habit_1',un:habitDays>=1,n:'Новичок E-ранга',req:'Заверши привычку 1 день подряд',reward:'+20 XP разово',xp:20},
-        {img:'ach_002',key:'habit_3',un:habitDays>=3,n:'Целитель',req:'Выполни привычку 3 дня подряд',reward:'+30 XP разово',xp:30},
-        {img:'ach_003',key:'habit_7',un:habitDays>=7,n:'Упорство',req:'Не сломался — 7 дней подряд',reward:'+50 XP разово',xp:50},
-        {img:'ach_004',key:'habit_10',un:habitDays>=10,n:'Охотник E-ранга',req:'Продержись 10 дней подряд',reward:'+60 XP разово',xp:60},
-        {img:'ach_005',key:'habit_21',un:habitDays>=21,n:'Повышение',req:'Прирост силы заметен — 21 день подряд',reward:'+100 XP разово',xp:100},
-        {img:'ach_006',key:'habit_multi',un:habits&&habits.length>=2,n:'Дисциплина',req:'Веди 2+ привычки одновременно',reward:'+40 XP разово',xp:40},
-        {img:'ach_007',key:'habit_30',un:habitDays>=30,n:'Монарх привычек',req:'30 дней подряд — ты настоящий монарх своей жизни',reward:'+150 XP разово',xp:150},
-        {img:'ach_008',key:'habit_shadow30',un:habitDays>=30,n:'Тень прогресса',req:'Не пропусти ни дня в этом месяце',reward:'+150 XP разово',xp:150},
-        {img:'ach_009',key:'lvl_2',un:lvl>=2,n:'Следующий этаж',req:'Достигни новой цели и подними уровень',reward:'+30 XP разово',xp:30},
-        {img:'ach_010',key:'habit_plan5',un:habitDays>=5,n:'Мастер плана',req:'Создай план привычек и следуй ему 5 дней',reward:'+40 XP разово',xp:40},
-        {img:'ach_011',key:'friend_1',un:myFriendsCount>=1,n:'Сильнее вместе',req:'Пригласи друга и идите к целям вместе',reward:'+40 XP разово',xp:40},
-        {img:'ach_012',key:'habit_14',un:habitDays>=14,n:'Воля монарха',req:'Преодолей сложную привычку и не сдайся — 14 дней',reward:'+80 XP разово',xp:80},
-        {img:'ach_013',key:'habit_90',un:habitDays>=90,n:'Легенда привычек',req:'90 дней подряд. Ты легенда',reward:'+300 XP разово',xp:300},
-        {img:'ach_014',key:'habit_180',un:habitDays>=180,n:'Абсолютный монарх',req:'180 дней подряд. Ты на вершине',reward:'+600 XP разово',xp:600},
+        {img:'ach_000',key:'habit_create',un:habits&&habits.length>=1,n:'Пробуждение',req:'Сделай первую привычку шагом к силе',reward:'+20 EXP разово',xp:20},
+        {img:'ach_001',key:'habit_1',un:habitDays>=1,n:'Новичок E-ранга',req:'Заверши привычку 1 день подряд',reward:'+20 EXP разово',xp:20},
+        {img:'ach_002',key:'habit_3',un:habitDays>=3,n:'Целитель',req:'Выполни привычку 3 дня подряд',reward:'+30 EXP разово',xp:30},
+        {img:'ach_003',key:'habit_7',un:habitDays>=7,n:'Упорство',req:'Не сломался — 7 дней подряд',reward:'+50 EXP разово',xp:50},
+        {img:'ach_004',key:'habit_10',un:habitDays>=10,n:'Охотник E-ранга',req:'Продержись 10 дней подряд',reward:'+60 EXP разово',xp:60},
+        {img:'ach_005',key:'habit_21',un:habitDays>=21,n:'Повышение',req:'Прирост силы заметен — 21 день подряд',reward:'+100 EXP разово',xp:100},
+        {img:'ach_006',key:'habit_multi',un:habits&&habits.length>=2,n:'Дисциплина',req:'Веди 2+ привычки одновременно',reward:'+40 EXP разово',xp:40},
+        {img:'ach_007',key:'habit_30',un:habitDays>=30,n:'Монарх привычек',req:'30 дней подряд — ты настоящий монарх своей жизни',reward:'+150 EXP разово',xp:150},
+        {img:'ach_008',key:'habit_shadow30',un:habitDays>=30,n:'Тень прогресса',req:'Не пропусти ни дня в этом месяце',reward:'+150 EXP разово',xp:150},
+        {img:'ach_009',key:'lvl_2',un:lvl>=2,n:'Следующий этаж',req:'Достигни новой цели и подними уровень',reward:'+30 EXP разово',xp:30},
+        {img:'ach_010',key:'habit_plan5',un:habitDays>=5,n:'Мастер плана',req:'Создай план привычек и следуй ему 5 дней',reward:'+40 EXP разово',xp:40},
+        {img:'ach_011',key:'friend_1',un:myFriendsCount>=1,n:'Сильнее вместе',req:'Пригласи друга и идите к целям вместе',reward:'+40 EXP разово',xp:40},
+        {img:'ach_012',key:'habit_14',un:habitDays>=14,n:'Воля монарха',req:'Преодолей сложную привычку и не сдайся — 14 дней',reward:'+80 EXP разово',xp:80},
+        {img:'ach_013',key:'habit_90',un:habitDays>=90,n:'Легенда привычек',req:'90 дней подряд. Ты легенда',reward:'+300 EXP разово',xp:300},
+        {img:'ach_014',key:'habit_180',un:habitDays>=180,n:'Абсолютный монарх',req:'180 дней подряд. Ты на вершине',reward:'+600 EXP разово',xp:600},
       ]},
       {title:'Рейтинг',items:(()=>{
         // временно выключено: пока игроков мало, топ-места достаются даром —
@@ -2741,25 +2741,25 @@
         const RANK_ACH_ENABLED=new Date()>=new Date('2026-08-08');
         const gate=RANK_ACH_ENABLED?null:'Скоро — рейтинг откроется, когда наберётся больше игроков';
         return[
-        {img:'ach_091',key:'rank_1',un:RANK_ACH_ENABLED&&pos===1,n:'Лучший из лучших',req:gate||'Займи 1 место в рейтинге',reward:'+5000 XP разово',xp:5000},
-        {img:'ach_092',key:'rank_2',un:RANK_ACH_ENABLED&&pos===2,n:'Серебряный охотник',req:gate||'Займи 2 место в рейтинге',reward:'+3000 XP разово',xp:3000},
-        {img:'ach_093',key:'rank_3',un:RANK_ACH_ENABLED&&pos===3,n:'Бронзовый воин',req:gate||'Займи 3 место в рейтинге',reward:'+2000 XP разово',xp:2000},
-        {img:'ach_094',key:'rank_top10',un:RANK_ACH_ENABLED&&pos!=null&&pos<=10,n:'В десятке лучших',req:gate||'Войди в топ 10 рейтинга',reward:'+1000 XP разово',xp:1000},
-        {img:'ach_095',key:'rank_top50',un:RANK_ACH_ENABLED&&pos!=null&&pos<=50,n:'В пятидесятке',req:gate||'Войди в топ 50 рейтинга',reward:'+500 XP разово',xp:500},
-        {img:'ach_100',key:'rank_top100',un:RANK_ACH_ENABLED&&pos!=null&&pos<=100,n:'В сотне сильнейших',req:gate||'Войди в топ 100 рейтинга',reward:'+300 XP разово',xp:300},
-        {img:'ach_099',key:'rank_top500',un:RANK_ACH_ENABLED&&pos!=null&&pos<=500,n:'В пятьсот сильнейших',req:gate||'Войди в топ 500 рейтинга',reward:'+200 XP разово',xp:200},
-        {img:'ach_098',key:'rank_top1000',un:RANK_ACH_ENABLED&&pos!=null&&pos<=1000,n:'В тысяче лучших',req:gate||'Войди в топ 1000 рейтинга',reward:'+150 XP разово',xp:150},
-        {img:'ach_096',key:'rank_world_1',un:RANK_ACH_ENABLED&&pos===1,n:'Первый в мире',req:gate||'Займи 1 место в общем рейтинге',reward:'+10000 XP разово',xp:10000},
-        {img:'ach_097',key:'rank_city_1',un:RANK_ACH_ENABLED&&cityPos===1,n:'Первый в регионе',req:gate||(player&&player.city?('Займи 1 место в рейтинге города '+player.city):'Укажи город в настройках, чтобы участвовать'),reward:'+1500 XP разово',xp:1500},
+        {img:'ach_091',key:'rank_1',un:RANK_ACH_ENABLED&&pos===1,n:'Лучший из лучших',req:gate||'Займи 1 место в рейтинге',reward:'+5000 EXP разово',xp:5000},
+        {img:'ach_092',key:'rank_2',un:RANK_ACH_ENABLED&&pos===2,n:'Серебряный охотник',req:gate||'Займи 2 место в рейтинге',reward:'+3000 EXP разово',xp:3000},
+        {img:'ach_093',key:'rank_3',un:RANK_ACH_ENABLED&&pos===3,n:'Бронзовый воин',req:gate||'Займи 3 место в рейтинге',reward:'+2000 EXP разово',xp:2000},
+        {img:'ach_094',key:'rank_top10',un:RANK_ACH_ENABLED&&pos!=null&&pos<=10,n:'В десятке лучших',req:gate||'Войди в топ 10 рейтинга',reward:'+1000 EXP разово',xp:1000},
+        {img:'ach_095',key:'rank_top50',un:RANK_ACH_ENABLED&&pos!=null&&pos<=50,n:'В пятидесятке',req:gate||'Войди в топ 50 рейтинга',reward:'+500 EXP разово',xp:500},
+        {img:'ach_100',key:'rank_top100',un:RANK_ACH_ENABLED&&pos!=null&&pos<=100,n:'В сотне сильнейших',req:gate||'Войди в топ 100 рейтинга',reward:'+300 EXP разово',xp:300},
+        {img:'ach_099',key:'rank_top500',un:RANK_ACH_ENABLED&&pos!=null&&pos<=500,n:'В пятьсот сильнейших',req:gate||'Войди в топ 500 рейтинга',reward:'+200 EXP разово',xp:200},
+        {img:'ach_098',key:'rank_top1000',un:RANK_ACH_ENABLED&&pos!=null&&pos<=1000,n:'В тысяче лучших',req:gate||'Войди в топ 1000 рейтинга',reward:'+150 EXP разово',xp:150},
+        {img:'ach_096',key:'rank_world_1',un:RANK_ACH_ENABLED&&pos===1,n:'Первый в мире',req:gate||'Займи 1 место в общем рейтинге',reward:'+10000 EXP разово',xp:10000},
+        {img:'ach_097',key:'rank_city_1',un:RANK_ACH_ENABLED&&cityPos===1,n:'Первый в регионе',req:gate||(player&&player.city?('Займи 1 место в рейтинге города '+player.city):'Укажи город в настройках, чтобы участвовать'),reward:'+1500 EXP разово',xp:1500},
         ];})(),
       },
       {title:'Характеристики',items:[
-        {em:'💪',key:'stat_str',n:'Силач',req:'Сила ≥ 20',reward:'+60 XP разово',xp:60,un:stats.strength>=20},
-        {em:'⚡',key:'stat_agi',n:'Ловкач',req:'Ловкость ≥ 20',reward:'+60 XP разово',xp:60,un:stats.agility>=20},
-        {em:'🧠',key:'stat_int',n:'Интеллект',req:'Интеллект ≥ 20',reward:'+60 XP разово',xp:60,un:stats.intellect>=20},
-        {em:'❤️',key:'stat_hp',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'+60 XP разово',xp:60,un:stats.health>=20},
-        {em:'🕯️',key:'stat_will',n:'Волевой',req:'Дух воли ≥ 20',reward:'+60 XP разово',xp:60,un:stats.will>=20},
-        {em:'🏃',key:'stat_end',n:'Выносливый',req:'Выносливость ≥ 20',reward:'+60 XP разово',xp:60,un:stats.endurance>=20},
+        {em:'💪',key:'stat_str',n:'Силач',req:'Сила ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.strength>=20},
+        {em:'⚡',key:'stat_agi',n:'Ловкач',req:'Ловкость ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.agility>=20},
+        {em:'🧠',key:'stat_int',n:'Интеллект',req:'Интеллект ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.intellect>=20},
+        {em:'❤️',key:'stat_hp',n:'Здоровяк',req:'Здоровье ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.health>=20},
+        {em:'🕯️',key:'stat_will',n:'Волевой',req:'Дух воли ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.will>=20},
+        {em:'🏃',key:'stat_end',n:'Выносливый',req:'Выносливость ≥ 20',reward:'+60 EXP разово',xp:60,un:stats.endurance>=20},
       ]},
     ];
   }
@@ -3098,7 +3098,7 @@
       const me=(p.name===myName)?' me':'';
       const cls=i===0?'top1':i===1?'top2':i===2?'top3':'';
       const click=p.device_id?' onclick="openPlayerProfile(\''+p.device_id+'\')"':'';
-      const valHtml=lbCurStat!=null?(p.statValue||0):(p.exp||0)+' XP';
+      const valHtml=lbCurStat!=null?(p.statValue||0):(p.exp||0)+' EXP';
       return '<div class="rankrow '+cls+me+'"'+click+'><div class="pos">'+(i+1)+'</div><div class="ava">'+(p.avatar_url?'<img src="'+p.avatar_url+'" alt="">':(p.name||'?')[0])+'</div><div class="un">'+(p.name||'Игрок')+(me?'<small style="color:var(--gold)">(ты)</small>':'<small>Ранг '+(p.rank||'E')+' · LVL '+(p.level||1)+'</small>')+'</div><div class="xp">'+valHtml+'</div></div>';
     }).join('');
   }
