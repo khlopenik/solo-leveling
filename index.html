@@ -13,7 +13,7 @@
   // (просто скрывает/показывает его через кнопку меню, не перезагружая страницу) —
   // поэтому одной проверки версии при загрузке недостаточно: перепроверяем при
   // каждом возврате видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-07-09-77';
+  var APP_VERSION='2026-07-09-78';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -789,7 +789,7 @@
     <div class="priv-row"><span class="pl">🔒 Приватность</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openPriv()">Открыть</button></div>
     <div class="priv-row"><span class="pl">🔔 Уведомления</span><div class="sw on" onclick="this.classList.toggle('on')"></div></div>
     <div class="priv-row"><span class="pl">⚙ Перенастроить квест</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');openQB()">Открыть</button></div>
-    <div class="priv-row"><span class="pl">🔄 Полный сброс прогресса (уровень, эксп, статы, привычки)<br><small style="color:var(--muted)">если тестировала и хочешь начать заново — привычки останутся, но с чистого счёта дней</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
+    <div class="priv-row"><span class="pl">🔄 Полный сброс прогресса (уровень, эксп, статы, объём упражнений)<br><small style="color:var(--muted)">если тестировала и хочешь начать заново — привычки (дни без вредной привычки) не трогает</small></span><button class="poke" onclick="resetExerciseTotals()">Сбросить</button></div>
     <div class="priv-row"><span class="pl">📅 Начать отсчёт дня пробуждения заново<br><small style="color:var(--muted)">если только тестировала — день 1 будет с сегодня</small></span><button class="poke" onclick="resetJoinedAt()">Сбросить</button></div>
     <div class="priv-row"><span class="pl" style="color:var(--danger)">🗑 Удалить аккаунт</span><button class="poke" id="resetBtn" style="border-color:var(--danger);color:#ffb3c2" onclick="resetProfileTap(this)">Удалить</button></div>
     <div class="rnote" style="margin-top:8px">Удалит игрока и весь прогресс — локально и в облаке — и откроет создание нового игрока. Нажать дважды для подтверждения.</div>
@@ -1486,16 +1486,9 @@
     // иначе уже "полученные" (пусть и ошибочно) ачивки за объём никогда не откроются заново —
     // ach_027 (весь квест на 100% сегодня) не трогаем, он не завязан на объём
     Object.keys(EXERCISE_ACH_MAP).forEach(k=>{if(k!=='ach_027')earnedAch.delete(k);});
-    // ачивки за привычки считаются от даты создания привычки (сколько дней "держишься"),
-    // без реального ежедневного подтверждения — если привычка заведена давно, они все
-    // разом "открываются" сами по себе. Сбрасываем даты стартов вместе с объёмом.
-    ['habit_create','habit_1','habit_3','habit_7','habit_10','habit_21','habit_multi','habit_30','habit_shadow30','habit_plan5','habit_14','habit_90','habit_180'].forEach(k=>earnedAch.delete(k));
+    // привычки НЕ трогаем — это реальный прогресс человека (дни без вредной
+    // привычки), а не тестовые данные; сбрасывать их дату старта нельзя
     saveEarnedAch();
-    if(habits&&habits.length){
-      habits.forEach(h=>h.startDate=today());
-      DB.set('habits',habits);
-      if(typeof renderHabit==='function')renderHabit();
-    }
     // характеристики растут из тех же квестов — обнуляем вместе с объёмом, иначе
     // раздутые "Сила"/"Ловкость" и т.п. останутся, а следующий заход перезапишет
     // ими же честно обнулённую базу
