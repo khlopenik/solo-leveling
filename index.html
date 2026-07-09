@@ -9,15 +9,30 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-72';
-  try{
+  // Telegram часто держит один и тот же открытый WebView живым между заходами
+  // (просто скрывает/показывает его через кнопку меню, не перезагружая страницу) —
+  // поэтому одной проверки версии при загрузке недостаточно: перепроверяем при
+  // каждом возврате видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
+  var APP_VERSION='2026-07-09-73';
+  var checking=false;
+  function checkVersion(){
+    if(checking)return;
+    checking=true;
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      checking=false;
       if(d&&d.v&&d.v!==APP_VERSION){
         var u=new URL(location.href);
         u.searchParams.set('_v',d.v);
         location.replace(u.toString());
       }
-    }).catch(function(){});
+    }).catch(function(){checking=false;});
+  }
+  try{
+    checkVersion();
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkVersion();});
+    window.addEventListener('focus',checkVersion);
+    window.addEventListener('pageshow',checkVersion);
+    setInterval(checkVersion,20000);
   }catch(e){}
 })();
 </script>
