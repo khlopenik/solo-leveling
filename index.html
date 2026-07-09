@@ -13,7 +13,7 @@
   // (просто скрывает/показывает его через кнопку меню, не перезагружая страницу) —
   // поэтому одной проверки версии при загрузке недостаточно: перепроверяем при
   // каждом возврате видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-07-09-79';
+  var APP_VERSION='2026-07-09-80';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -1568,6 +1568,18 @@
     exp=0;lvl=1;need=needForLevel(1);
     saveProgress();
   }
+  // разовая доплата: ачивки, честно открытые по-настоящему (например привычка,
+  // которая реально ведётся много дней), были помечены как "получено" миграцией
+  // выше БЕЗ начисления EXP — раз они законные, а не тестовые, начисляем один раз
+  function migrateAchPayoutOnce(){
+    if(DB.get('achFixV2',false))return;
+    DB.set('achFixV2',true);
+    if(!player)return;
+    const groups=getAchGroups();
+    let paid=false;
+    groups.forEach(g=>g.items.forEach(a=>{if(a.un&&a.key&&a.xp){awardAchXp(a.xp);paid=true;}}));
+    if(paid){render();renderStats();toast('🏆 Начислен EXP за уже честно открытые ачивки');}
+  }
   function go(name){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('s-'+name).classList.add('active');
@@ -2151,6 +2163,7 @@
     loadEarnedAch();
     initHabit(); // нужен до бэкфила ачивок ниже, чтобы учесть уже существующие привычки
     migrateAchBackfillOnce();
+    migrateAchPayoutOnce();
     bodyMetrics=DB.get('bodyMetrics',null);
     if(player){applyPlayer();document.getElementById('onb').classList.add('hide');bootHide();}
     render();renderStats();renderWater();drawChart();renderDays();renderStreak();renderQuest();loadDiary();renderNutrition();renderBodyMetrics();renderAch('progAch');
