@@ -13,7 +13,7 @@
   // (просто скрывает/показывает его через кнопку меню, не перезагружая страницу) —
   // поэтому одной проверки версии при загрузке недостаточно: перепроверяем при
   // каждом возврате видимости/фокуса и вдобавок раз в 20 секунд, пока апп открыт.
-  var APP_VERSION='2026-07-09-74';
+  var APP_VERSION='2026-07-09-75';
   var checking=false;
   function checkVersion(){
     if(checking)return;
@@ -2044,6 +2044,11 @@
   function applyPlayer(){
     if(!player)return;
     if(!player.joinedAt){player.joinedAt=today();DB.set('player',player);}
+    // старые аккаунты регистрировались до появления города/пола в рейтинге —
+    // напоминаем один раз за сессию, пока не заполнено
+    if(!player.city||!player.sex){
+      setTimeout(()=>toast('📍 Укажи город и пол в Настройках — иначе рейтинг по региону/полу тебя не найдёт'),1500);
+    }
     refreshEffectiveRank();
     checkAwakeningFinalize();
     maybeSpawnSurpriseQuest();
