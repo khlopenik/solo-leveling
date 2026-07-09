@@ -9,7 +9,7 @@
 <title>SYSTEM — Поднятие уровня в одиночку</title>
 <script>
 (function(){
-  var APP_VERSION='2026-07-08-71';
+  var APP_VERSION='2026-07-08-72';
   try{
     fetch('version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
       if(d&&d.v&&d.v!==APP_VERSION){
@@ -767,6 +767,7 @@
     <div class="pr" style="text-align:center;margin-bottom:14px">Игрок и приложение</div>
     <div class="priv-row"><span class="pl">✏️ Имя игрока</span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');renamePlayer()">Изменить</button></div>
     <div class="priv-row"><span class="pl">📍 Город<br><small id="cityCurVal" style="color:var(--muted)">не указан</small></span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');editCity()">Изменить</button></div>
+    <div class="priv-row"><span class="pl">⚧ Пол (для рейтинга)<br><small id="sexCurVal" style="color:var(--muted)">не указан</small></span><button class="poke" onclick="document.getElementById('setmodal').classList.remove('show');editSex()">Изменить</button></div>
     <div class="priv-row"><span class="pl">🎴 Аватар (аниме)</span><button class="poke" onclick="document.getElementById('avatar-reupload').click()">Загрузить</button></div>
     <input type="file" accept="image/*" id="avatar-reupload" style="display:none" onchange="onAvatarReupload(event)">
     <div class="priv-row"><span class="pl">🔗 Вход на компьютере</span><button class="poke" onclick="openLinkModal()">Открыть</button></div>
@@ -1200,12 +1201,21 @@
     const sexLbl=lbCurSex?(' · '+(lbCurSex==='Мужской'?'мужчины':'женщины')):'';
     lbl.textContent=base+' · '+scopeLbl+sexLbl;
   }
+  // если список пуст при активных фильтрах (город/пол) — скорее всего у самого игрока
+  // не указаны город/пол, поэтому он сам не проходит фильтр, а не "нет игроков вообще"
+  function emptyLbHint(){
+    const missing=[];
+    if(lbScope==='city'&&!(player&&player.city))missing.push('город');
+    if(lbCurSex&&!(player&&player.sex))missing.push('пол');
+    if(missing.length)return 'Никого не нашлось. Возможно, у тебя самой не указан(ы) '+missing.join(' и ')+' — зайди в Настройки и укажи, иначе фильтр не найдёт даже тебя.';
+    return 'Пока никого нет — стань первым! 💪';
+  }
   async function loadLeaderboard(){
     const box=document.getElementById('lb-list');if(!box)return;
     const cityParam=lbScope==='city'?(player&&player.city):undefined;
     const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam,sex:lbCurSex});
     const top=(res&&res.top)||[];
-    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">Пока никого нет — стань первым! 💪</div>';return;}
+    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px;line-height:1.6">'+emptyLbHint()+'</div>';return;}
     const myName=player&&player.name;let myPos=top.findIndex(p=>p.name===myName);
     if(!lbCurStat&&lbScope==='world'){myRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');}
     if(!lbCurStat&&lbScope==='city'){myCityRankPos=myPos>=0?myPos+1:null;renderAch('progAch');renderAch('profAch');}
@@ -1556,8 +1566,8 @@
   }
   function openSettings(){renderCitySetting();document.getElementById('setmodal').classList.add('show');}
   function renderCitySetting(){
-    const el=document.getElementById('cityCurVal');if(!el)return;
-    el.textContent=(player&&player.city)?player.city:'не указан';
+    const el=document.getElementById('cityCurVal');if(el)el.textContent=(player&&player.city)?player.city:'не указан';
+    const sel=document.getElementById('sexCurVal');if(sel)sel.textContent=(player&&player.sex)?player.sex:'не указан';
   }
   function openLinkModal(){
     document.getElementById('setmodal').classList.remove('show');
@@ -1811,6 +1821,19 @@
     cloudPush();
     renderCitySetting();
     toast('✓ Город обновлён: '+player.city);
+  }
+  // старые аккаунты (до появления фильтра по полу) регистрировались без этого поля —
+  // без него игрок никогда не попадёт в фильтр "Мужчины"/"Женщины"
+  function editSex(){
+    if(!player)return;
+    const cur=player.sex==='Женский'?2:1;
+    const pick=prompt('Пол (для рейтинга): впиши 1 — Мужской, 2 — Женский', String(cur));
+    if(pick!=='1'&&pick!=='2')return;
+    player.sex=pick==='2'?'Женский':'Мужской';
+    DB.set('player',player);
+    cloudPush();
+    renderCitySetting();
+    toast('✓ Пол обновлён: '+player.sex);
   }
   function resetJoinedAt(){
     if(!player)return;
@@ -3034,7 +3057,7 @@
     const cityParam=lbScope==='city'?(player&&player.city):undefined;
     const res=await cloudCall({action:'leaderboard',stat:lbCurStat,city:cityParam,sex:lbCurSex});
     const top=(res&&res.top)||[];
-    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Пока никого нет — стань первым! 💪</div>';return;}
+    if(!top.length){box.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;line-height:1.6">'+emptyLbHint()+'</div>';return;}
     const myName=player&&player.name;
     const myFullPos=top.findIndex(p=>p.name===myName);
     if(!lbCurStat&&lbScope==='world'){myRankPos=myFullPos>=0?myFullPos+1:null;renderAch('progAch');renderAch('profAch');}
