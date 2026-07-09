@@ -2,9 +2,12 @@
 GitHub Actions (.github/workflows/bot-inactivity.yml), а не постоянным
 процессом. Никакого сервера/Render не требуется.
 
-Триггер — реальное время с момента последнего ПОЛНОСТЬЮ закрытого дня
-(state.lastFullDayAt, точный timestamp, не дата), а не время последнего
-открытия приложения (можно открыть и не выполнить квест).
+Триггер — реальное время с момента ЛЮБОГО реального действия в квесте
+(state.lastActivityAt, точный timestamp, не дата) — если человек выполнил
+хоть один пункт, но не все, уведомление о неактивности не шлём. Раньше
+триггером был lastFullDayAt (только 100%-закрытие дня), из-за чего человек,
+реально позанимавшийся сегодня частично, всё равно получал "ты не заходил
+N часов".
 
 Лестница по часам с момента последнего закрытого дня:
   6ч/9ч  — предупреждения (без штрафа, картинки 103/104)
@@ -54,8 +57,8 @@ TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 TIERS = [
     (1, 6,   "ach_103.png",       0),
     (2, 9,   "ach_104.png",       0),
-    (3, 12,  "ach_102.png",       1),
-    (4, 24,  "ach_101.png",       2),
+    (3, 12,  "ach_101.png",       1),
+    (4, 24,  "ach_102.png",       2),
     (5, 72,  "ach_105.png",       3),
     (6, 168, "ach_106_left.png",  5),
     (7, 336, "ach_106_right.png", 8),
@@ -123,13 +126,18 @@ def _send_photo(tg_id, img_name, caption):
         logger.error("sendPhoto failed for %s: %s", tg_id, r.text)
 
 
-def _last_full_day_at(player_row):
-    """Точный момент последнего полностью закрытого дня (state.lastFullDayAt).
-    Если его ещё нет (игрок ни разу не закрывал день целиком с момента
-    обновления) — не проверяем неактивность вообще, чтобы не спамить
-    свежих/старых игроков без этого поля."""
+def _last_activity_at(player_row):
+    """Момент последнего РЕАЛЬНОГО действия в квесте (state.lastActivityAt) —
+    отмечается at выполнении любого пункта, не только при закрытии дня на 100%.
+    Уведомления "ты не заходил N часов" должны приходить только если человек
+    вообще ничего не делал — если он выполнил хоть один пункт, но не все,
+    это не повод его пинать. Раньше здесь использовался lastFullDayAt (только
+    100%-закрытие дня), из-за чего человек, реально позанимавшийся сегодня
+    частично, всё равно получал "ты не заходил N часов".
+    Фоллбэк на lastFullDayAt — для клиентов, у которых ещё нет lastActivityAt
+    (старая версия фронта)."""
     state = player_row.get("state") or {}
-    ts = state.get("lastFullDayAt")
+    ts = state.get("lastActivityAt") or state.get("lastFullDayAt")
     if not ts:
         return None
     try:
@@ -164,25 +172,25 @@ def main():
         except ValueError:
             continue
 
-        last_full = _last_full_day_at(p)
-        if last_full is None:
+        last_active = _last_activity_at(p)
+        if last_active is None:
             continue
-        hours_missed = (now - last_full).total_seconds() / 3600
+        hours_missed = (now - last_active).total_seconds() / 3600
 
         last_tier = p.get("last_warned_tier") or 0
         last_seen_full_day = _parse_db_ts(p.get("last_seen_full_day"))
 
-        # обнаружили новый закрытый день с прошлого прогона — сбрасываем тир
+        # обнаружили новую активность с прошлого прогона — сбрасываем тир
         # немедленно, независимо от того, сколько часов уже прошло с этого
         # момента (раньше сброс происходил только в узком окне < 6ч)
-        is_new_full_day = last_seen_full_day is None or last_full > last_seen_full_day
+        is_new_full_day = last_seen_full_day is None or last_active > last_seen_full_day
         if is_new_full_day:
             last_tier = 0
 
         if hours_missed < TIERS[0][1]:
             if last_tier != (p.get("last_warned_tier") or 0) or is_new_full_day:
                 try:
-                    _patch_player(device_id, 0, 0, last_full.isoformat())
+                    _patch_player(device_id, 0, 0, last_active.isoformat())
                 except requests.RequestException:
                     logger.exception("Не удалось сбросить тир предупреждений для %s", device_id)
             continue
@@ -202,7 +210,7 @@ def main():
 
         if new_tier != (p.get("last_warned_tier") or 0) or is_new_full_day:
             try:
-                _patch_player(device_id, new_tier, new_penalty, last_full.isoformat())
+                _patch_player(device_id, new_tier, new_penalty, last_active.isoformat())
             except requests.RequestException:
                 logger.exception("Не удалось обновить штраф для %s", device_id)
 
